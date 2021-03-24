@@ -3,6 +3,7 @@ alembic==1.5.7
 aniso8601==7.0.0
 async-exit-stack==1.0.1
 async-generator==1.10
+bcrypt
 certifi==2020.12.5
 cffi==1.14.5
 chardet==4.0.0

@@ -3,4 +3,5 @@ psycopg2
 sqlalchemy
 uvicorn[standard]
 python-jose[cryptography]
+bcrypt
 passlib[bcrypt]
