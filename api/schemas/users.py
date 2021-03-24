@@ -1,8 +1,13 @@
-from typing import List, Optional, Any
+# Standard Library
 from datetime import datetime, date
 
+# Types
+from typing import List, Optional, Any
 from pydantic import BaseModel, validator
+
+# SQLAlchemy
 from sqlalchemy.orm import Query
+
 
 class UserBase(BaseModel):
     email: str
@@ -17,15 +22,14 @@ class UserCreate(UserBase):
 
 class User(UserBase):
     id: int
-
-    # tweets: Optional[Any] = []
-
     class Config:
         orm_mode = True
+
 
 class BasicTweet(BaseModel):
     id: int
     content: str
+
 
 class UserResponse(BaseModel):
     id: int

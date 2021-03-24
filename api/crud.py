@@ -1,31 +1,52 @@
+# SQLAlchemy
 from sqlalchemy.orm import Session
 
+# Types
+from typing import Optional
+
+# Custom Modules
 from . import models, schemas
+from .database import engine
+from .core import security
 
 
 def get_user(db: Session, user_id: int):
+    """Get a single user by id
+    """
     return db.query(models.User).filter(models.User.id == user_id).first()
 
 
 def get_user_by_email(db: Session, email: str):
-    return db.query(models.User).filter(models.User.email == email).first()
+    """Get a single user by email
+    """
+    query = db.query(models.User).filter(models.User.email == email)
+    # print(query.statement.compile(engine))
+    return query.one_or_none()
+
 
 def get_user_by_username(db: Session, username: str):
+    """Get a single user by username
+    """
     return db.query(models.User).filter(models.User.username == username).first()
 
 
 def get_users(db: Session, skip: int = 0, limit: int = 100):
-    return db.query(models.User).offset(skip).limit(limit).all()
+    """Get all users
+    """
+    query = db.query(models.User).offset(skip).limit(limit)
+    # print(query.statement.compile(engine))
+    return query.all()
 
 
 def create_user(db: Session, user: schemas.UserCreate):
-    fake_hashed_password = user.password + "notreallyhashed"
+    """Add a user
+    """
     db_user = models.User(
-        email=user.email, 
-        username=user.username, 
+        email=user.email,
+        username=user.username,
         bio=user.bio,
         birthdate=user.birthdate,
-        hashed_password=fake_hashed_password
+        hashed_password=security.get_password_hash(user.password)
     )
     db.add(db_user)
     db.commit()
@@ -33,8 +54,20 @@ def create_user(db: Session, user: schemas.UserCreate):
     return db_user
 
 
+def update_user(db: Session, skip: int = 0, limit: int = 100):
+    # TODO - implement
+    # TODO - decide what fields should be allowed to be updated (bio, username...)
+    return None
+
+
 def get_tweets(db: Session, skip: int = 0, limit: int = 100):
-    return db.query(models.Tweet).offset(skip).limit(limit).all()
+    result = db.query(models.Tweet).offset(skip).limit(limit).all()
+    map(lambda r: print(dict(r)), result)
+    return result
+
+
+def get_tweets_for_user(db: Session, user_id: int, skip: int = 0, limit: int = 100):
+    return db.query(models.Tweet).filter(models.Tweet.user_id == user_id).offset(skip).limit(limit).all()
 
 
 def create_user_tweet(db: Session, tweet: schemas.TweetCreate, user_id: int):
@@ -43,3 +76,28 @@ def create_user_tweet(db: Session, tweet: schemas.TweetCreate, user_id: int):
     db.commit()
     db.refresh(db_tweet)
     return db_tweet
+
+
+def create_tweet_comment(db: Session, comment: schemas.CommentCreate):
+    db_comment = models.Comments(**comment.dict())
+    db.add(db_comment)
+    db.commit()
+    db.refresh(db_comment)
+    return db_comment
+
+
+def update_comment(db: Session, comment: schemas.CommentUpdate):
+    db_comment = db.query(models.Comments).filter(
+        models.Comments.id == comment.id).one_or_none()
+    db_comment.content = comment.new_content
+    db.commit()
+    db.refresh(db_comment)
+    return db_comment
+
+
+def get_comments_for_user(db: Session, user_id: int, skip: int = 0, limit: int = 100):
+    return db.query(models.Comments).filter(models.Comments.user_id == user_id).offset(skip).limit(limit).all()
+
+
+def get_comments_for_tweet(db: Session, tweet_id: int, skip: int = 0, limit: int = 100):
+    return db.query(models.Comments).filter(models.Comments.tweet_id == tweet_id).offset(skip).limit(limit).all()
