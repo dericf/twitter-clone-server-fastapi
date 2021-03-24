@@ -1,0 +1,6 @@
+venv
+documentation
+__pycache__
+*.db
+.env
+pgdata
