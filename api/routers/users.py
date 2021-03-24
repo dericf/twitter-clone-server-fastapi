@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from typing import List
 
 # Custom Modules
-from .. import schemas, crud
+from .. import schemas, crud, dependencies
 from ..core import security
 from ..core.config import settings
 from ..dependencies import get_db
@@ -47,6 +47,13 @@ def get_all_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)
             ) for tweet in user.tweets
         ]
     ) for user in users]
+
+
+@router.get("/me", response_model=schemas.User)
+def get_authenticated_user(db: Session = Depends(get_db), current_user: schemas.User = Depends(dependencies.get_current_user)):
+    """Get the currently logged in user if there is one (testing purposes only)
+    """
+    return current_user
 
 
 @router.get("/{user_id}", response_model=schemas.User)
