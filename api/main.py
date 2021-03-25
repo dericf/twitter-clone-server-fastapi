@@ -3,6 +3,7 @@ import os
 
 # FastAPI
 from fastapi import Depends, FastAPI, HTTPException, BackgroundTasks, Request
+from fastapi.middleware.cors import CORSMiddleware
 
 # Types
 from typing import List
@@ -11,7 +12,7 @@ from typing import List
 from sqlalchemy.orm import Session
 
 # Custom Modules
-from . import crud, models, schemas, dependencies, background_tasks as background_utilities
+from . import crud, models, schemas, dependencies
 from .database import SessionLocal, engine
 from .core import security
 from .core.config import settings
@@ -24,6 +25,20 @@ app = FastAPI(
     title="Twitter Clone (For Educational Purposes)",
     description="This API replicates some of the very basic functionality of twitter, including users, tweets, likes, comments and",
     version="0.0.1",
+)
+
+# C.O.R.S.
+origins = [
+    "http://localhost",
+    "http://localhost:8080",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Include All Routers
