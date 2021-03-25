@@ -1,3 +1,6 @@
+# FastAPI
+from fastapi import status, HTTPException
+
 # SQLAlchemy
 from sqlalchemy.orm import Session
 
@@ -10,10 +13,10 @@ from .database import engine
 from .core import security
 
 
-def get_user(db: Session, user_id: int):
+def get_user_by_id(db: Session, user_id: int):
     """Get a single user by id
     """
-    return db.query(models.User).filter(models.User.id == user_id).first()
+    return db.query(models.User).filter(models.User.id == user_id).one_or_none()
 
 
 def get_user_by_email(db: Session, email: str):
@@ -63,15 +66,18 @@ def update_user(db: Session, user_id: int, user_update: schemas.UserUpdate, skip
     return user_db
 
 
-def delete_user(db: Session, user_id: int, user: schemas.UserUpdate):
+def delete_user(db: Session, user_id: int):
     try:
-        db.query(models.User).filter(models.User.id == user.id).delete()
+        db.query(models.User).filter(models.User.id == user_id).delete()
         db.commit()
-        return True
+        
     except Exception as e:
-        return False
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Something went wrong")
 
 
+##########
+# TWEETS #
+##########
 def get_tweets(db: Session, skip: int = 0, limit: int = 100):
     result = db.query(models.Tweet).offset(skip).limit(limit).all()
     map(lambda r: print(dict(r)), result)
@@ -79,7 +85,14 @@ def get_tweets(db: Session, skip: int = 0, limit: int = 100):
 
 
 def get_tweets_for_user(db: Session, user_id: int, skip: int = 0, limit: int = 100):
-    return db.query(models.Tweet).filter(models.Tweet.user_id == user_id).offset(skip).limit(limit).all()
+    # First check if user exists
+    db_user = db.query(models.User).filter(models.User.id == user_id).one_or_none()
+    
+    if not db_user:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User does not exist")
+    
+    # user exists - proceed to return tweets
+    return db_user.tweets
 
 
 def create_user_tweet(db: Session, tweet: schemas.TweetCreate, user_id: int):
@@ -93,67 +106,104 @@ def create_user_tweet(db: Session, tweet: schemas.TweetCreate, user_id: int):
     return db_tweet
 
 
-def update_tweet(db: Session, user_id: int, tweet: schemas.TweetUpdate):
+def update_tweet(db: Session, user_id: int, tweet_id: int, new_content: str):
     db_tweet: schemas.Tweet = db.query(models.Tweet).filter(
-        models.Tweet.id == tweet.id).one_or_none()
+        models.Tweet.id == tweet_id).one_or_none()
+
+    if not db_tweet:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="tweet not found")
 
     if db_tweet.user_id != user_id:
-        # TODO Raise exception here
-        return None
+        # Tweet does not belong to the user. Cannot delete.
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, detail="user does not own that tweet")
 
-    db_tweet.content = tweet.newContent
+    db_tweet.content = new_content
     db.commit()
     db.refresh(db_tweet)
     return db_tweet
 
 
 def delete_tweet(db: Session, user_id: int, tweet_id: int):
-    tweet_db: schemas.Tweet = db.query(models.Tweet).filter(
+    db_tweet: schemas.Tweet = db.query(models.Tweet).filter(
         models.Tweet.id == tweet_id).one_or_none()
-    if tweet_db.user_id != user_id:
+    if not db_tweet:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Tweet not found")
+    if db_tweet.user_id != user_id:
         # Tweet does not belong to the user
-        return False
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, detail="You are not authorized to delete that tweet")
     try:
-        db.delete(tweet_db)
-        return True
+        db.delete(db_tweet)
+        
     except Exception as e:
-        return False
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="Something went wrong")
 
 
+############
+# COMMENTS #
+############
 def create_tweet_comment(db: Session, user_id: int, comment: schemas.CommentCreate):
-    db_comment = models.Comments(**comment.dict())
-    db_comment.user_id = user_id
-    db.add(db_comment)
-    db.commit()
-    db.refresh(db_comment)
-    return db_comment
+    # First check that tweet exists
+    db_tweet: schemas.Tweet = db.query(models.Tweet).filter(
+        models.Tweet.id == comment.tweet_id).one_or_none()
+    if not db_tweet:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Tweet does not exist")
+    
+    # tweet exists - proceed to create comment
+    db_comment = models.Comments(tweet_id=comment.tweet_id, user_id=user_id, content=comment.content)
+    try:
+        db.add(db_comment)
+        db.commit()
+        db.refresh(db_comment)
+        return db_comment
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Tweet does not exist")
 
 
 def get_comments_for_user(db: Session, user_id: int, skip: int = 0, limit: int = 100):
-    return db.query(models.Comments).filter(models.Comments.user_id == user_id).offset(skip).limit(limit).all()
+    db_user = db.query(models.User).filter(models.User.id == user_id).one_or_none()
+    
+    if not db_user:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User does not exist")
+    return db_user.comments
 
 
 def get_comments_for_tweet(db: Session, tweet_id: int, skip: int = 0, limit: int = 100):
-    return db.query(models.Comments).filter(models.Comments.tweet_id == tweet_id).offset(skip).limit(limit).all()
+    db_tweet = db.query(models.Tweet).filter(models.Tweet.id == tweet_id).one_or_none()
+    
+    if not db_tweet:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Tweet does not exist")
+    return db_tweet.comments
 
 
-def update_comment(db: Session, comment: schemas.CommentUpdate):
-    db_comment = db.query(models.Comments).filter(
-        models.Comments.id == comment.id).one_or_none()
+def update_comment(db: Session, user_id: int, comment: schemas.CommentUpdate):
+    db_comment: schemas.Comment = db.query(models.Comments).filter(
+        models.Comments.id == comment.comment_id).one_or_none()
+    
+    if not db_comment:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Comment does not exist")
+
+    if db_comment.user_id != user_id:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, detail="You are not authorized to update that comment")
+    
     db_comment.content = comment.new_content
     db.commit()
     db.refresh(db_comment)
     return db_comment
 
 
-def delete_comment(db: Session, user_id: int, comment_id: int):
+def delete_comment(db: Session, user_id: int, comment: schemas.CommentCreate):
     comment_db: schemas.Comment = db.query(models.Comments).filter(
-        models.Comments.id == comment_id).one_or_none()
+        models.Comments.id == comment.comment_id).one_or_none()
+
+    if not comment_db:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Comment does not exist")
+    
     if comment_db.user_id != user_id:
         # comment does not belong to the user
-        return False
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, detail="You are not authorized to delete that comment")
+    
     try:
         db.delete(comment_db)
-        return True
+    
     except Exception as e:
-        return False
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Something went wrong")
