@@ -57,29 +57,45 @@ TODO
 
 ### Traefik + FastAPI docker on AWS
 
+
 ## Developer Docs and Examples
 
-## FastAPI Docs
+## Python Types
+
+[https://fastapi.tiangolo.com/python-types/](https://fastapi.tiangolo.com/python-types/)
+[https://mypy.readthedocs.io/en/latest/cheat_sheet_py3.html](https://mypy.readthedocs.io/en/latest/cheat_sheet_py3.html)
+
+### FastAPI Docs
 [https://fastapi.tiangolo.com/](https://fastapi.tiangolo.com/)
 
-## Starlette Docs
+### Starlette Docs
 [https://www.starlette.io/](https://www.starlette.io/)
 
-## FastAPI + SQLALchemy Tutorial
+### FastAPI + SQLALchemy Tutorial
 [https://fastapi.tiangolo.com/tutorial/sql-databases/](https://fastapi.tiangolo.com/tutorial/sql-databases/)
 
-## Alembic Docs
+### Alembic Docs
 
-## Docker Docs
+### Docker Docs
 
-## Docker Compose Docs
+### Docker Compose Docs
 
-## Traefik docker image Docs
+### Manual FastAPI Deployment Docs
 
-## FastAPI docker image Docs
+https://fastapi.tiangolo.com/deployment/manually/
 
-## Terraform Docs
+### Traefik docker image Docs
 
-## AWS RDS Docs
+### FastAPI docker image Docs
 
-## AWS ECS Docs
+https://fastapi.tiangolo.com/deployment/docker/
+
+### Terraform Docs
+
+### AWS RDS Docs
+
+### AWS ECS Docs
+
+### OpenAPI Spec Docs
+
+https://github.com/OAI/OpenAPI-Specification/blob/master/versions/3.1.0.md#format
