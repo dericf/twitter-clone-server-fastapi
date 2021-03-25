@@ -54,10 +54,22 @@ def create_user(db: Session, user: schemas.UserCreate):
     return db_user
 
 
-def update_user(db: Session, skip: int = 0, limit: int = 100):
-    # TODO - implement
-    # TODO - decide what fields should be allowed to be updated (bio, username...)
-    return None
+def update_user(db: Session, user_id: int, user_update: schemas.UserUpdate, skip: int = 0, limit: int = 100):
+    user_db = db.query(models.User).filter(
+        models.User.id == user_id).one_or_none()
+    user_db.bio = user_update.bio
+    db.commit()
+    db.refresh(user_db)
+    return user_db
+
+
+def delete_user(db: Session, user_id: int, user: schemas.UserUpdate):
+    try:
+        db.query(models.User).filter(models.User.id == user.id).delete()
+        db.commit()
+        return True
+    except Exception as e:
+        return False
 
 
 def get_tweets(db: Session, skip: int = 0, limit: int = 100):
@@ -71,25 +83,47 @@ def get_tweets_for_user(db: Session, user_id: int, skip: int = 0, limit: int = 1
 
 
 def create_user_tweet(db: Session, tweet: schemas.TweetCreate, user_id: int):
-    db_tweet = models.Tweet(**tweet.dict(), user_id=user_id)
+    db_tweet = models.Tweet(**tweet.dict())
+
+    db_tweet.user_id = user_id
+
     db.add(db_tweet)
     db.commit()
     db.refresh(db_tweet)
     return db_tweet
 
 
-def create_tweet_comment(db: Session, comment: schemas.CommentCreate):
-    db_comment = models.Comments(**comment.dict())
-    db.add(db_comment)
+def update_tweet(db: Session, user_id: int, tweet: schemas.TweetUpdate):
+    db_tweet: schemas.Tweet = db.query(models.Tweet).filter(
+        models.Tweet.id == tweet.id).one_or_none()
+
+    if db_tweet.user_id != user_id:
+        # TODO Raise exception here
+        return None
+
+    db_tweet.content = tweet.newContent
     db.commit()
-    db.refresh(db_comment)
-    return db_comment
+    db.refresh(db_tweet)
+    return db_tweet
 
 
-def update_comment(db: Session, comment: schemas.CommentUpdate):
-    db_comment = db.query(models.Comments).filter(
-        models.Comments.id == comment.id).one_or_none()
-    db_comment.content = comment.new_content
+def delete_tweet(db: Session, user_id: int, tweet_id: int):
+    tweet_db: schemas.Tweet = db.query(models.Tweet).filter(
+        models.Tweet.id == tweet_id).one_or_none()
+    if tweet_db.user_id != user_id:
+        # Tweet does not belong to the user
+        return False
+    try:
+        db.delete(tweet_db)
+        return True
+    except Exception as e:
+        return False
+
+
+def create_tweet_comment(db: Session, user_id: int, comment: schemas.CommentCreate):
+    db_comment = models.Comments(**comment.dict())
+    db_comment.user_id = user_id
+    db.add(db_comment)
     db.commit()
     db.refresh(db_comment)
     return db_comment
@@ -101,3 +135,25 @@ def get_comments_for_user(db: Session, user_id: int, skip: int = 0, limit: int =
 
 def get_comments_for_tweet(db: Session, tweet_id: int, skip: int = 0, limit: int = 100):
     return db.query(models.Comments).filter(models.Comments.tweet_id == tweet_id).offset(skip).limit(limit).all()
+
+
+def update_comment(db: Session, comment: schemas.CommentUpdate):
+    db_comment = db.query(models.Comments).filter(
+        models.Comments.id == comment.id).one_or_none()
+    db_comment.content = comment.new_content
+    db.commit()
+    db.refresh(db_comment)
+    return db_comment
+
+
+def delete_comment(db: Session, user_id: int, comment_id: int):
+    comment_db: schemas.Comment = db.query(models.Comments).filter(
+        models.Comments.id == comment_id).one_or_none()
+    if comment_db.user_id != user_id:
+        # comment does not belong to the user
+        return False
+    try:
+        db.delete(comment_db)
+        return True
+    except Exception as e:
+        return False
