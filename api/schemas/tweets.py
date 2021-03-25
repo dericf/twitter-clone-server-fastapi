@@ -11,7 +11,7 @@ class TweetBase(BaseModel):
 class TweetCreate(TweetBase):
     pass
 
-class TweetUpdate(TweetBase):
+class TweetUpdate(BaseModel):
     newContent: str
 
 
