@@ -14,8 +14,13 @@ class Comment(CommentBase):
     class Config:
         orm_mode = True
 
-class CommentCreate(CommentBase):
-    pass
+class CommentCreate(BaseModel):
+    content: str
+    tweet_id: int
 
-class CommentUpdate(CommentBase):
+class CommentDelete(BaseModel):
+    comment_id: int
+
+class CommentUpdate(BaseModel):
+    comment_id: int
     new_content: str
