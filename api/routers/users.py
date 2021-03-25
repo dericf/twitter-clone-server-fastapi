@@ -1,5 +1,5 @@
 # FastAPI
-from fastapi import APIRouter, HTTPException, Request, Depends
+from fastapi import APIRouter, HTTPException, Request, Depends, BackgroundTasks
 
 # SQLAlchemy
 from sqlalchemy.orm import Session
@@ -12,17 +12,20 @@ from .. import schemas, crud, dependencies
 from ..core import security
 from ..core.config import settings
 from ..dependencies import get_db
+from .. import background_functions
 
 router = APIRouter(prefix="/users", tags=['users'])
 
 
 @router.post("/", response_model=schemas.User)
-def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
+async def create_user(user: schemas.UserCreate, bg_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     """Create a new user record in the database
     """
     db_user = crud.get_user_by_email(db, email=user.email)
     if db_user:
         raise HTTPException(status_code=400, detail="Email already registered")
+    print("Sending registration email")
+    bg_tasks.add_task(background_functions.send_registration_confirmation_email, email=user.email)
     return crud.create_user(db=db, user=user)
 
 
