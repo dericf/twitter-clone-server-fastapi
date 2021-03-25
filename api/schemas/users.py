@@ -30,10 +30,21 @@ class User(UserBase):
     class Config:
         orm_mode = True
 
+class UserWithPassword(User):
+    hashed_password: str
+
+    class Config:
+        orm_mode = True
+
+
+class UserDeleteRequestBody(BaseModel):
+    password: str
+    
 
 class BasicTweet(BaseModel):
     id: int
     content: str
+    createdAt: datetime
 
 
 class UserResponse(BaseModel):
