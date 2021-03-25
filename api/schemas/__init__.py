@@ -5,6 +5,8 @@ from .basic_tweets import *
 from .tweets import *
 from .users import *
 from .basic_user import *
+from .followers import *
+from .follows import *
 from .auth import *
 from .token import *
 from .generic import *
