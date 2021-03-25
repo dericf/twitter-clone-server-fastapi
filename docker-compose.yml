@@ -35,10 +35,9 @@ services:
     depends_on:
       - db
     volumes: 
-      - ./:/app
+      - ./api:/app/api
     environment:
       MODULE_NAME: "api.main"
-      GUNICORN_CMD_ARGS: "--reload"
       POSTGRES_URL: $POSTGRES_URL
     entrypoint: /start-reload.sh # For dev only - adds hot-reloading
 volumes:
