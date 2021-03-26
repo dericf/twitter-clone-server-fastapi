@@ -57,10 +57,13 @@ def create_user(db: Session, user: schemas.UserCreate):
     return db_user
 
 
-def update_user(db: Session, user_id: int, user_update: schemas.UserUpdate, skip: int = 0, limit: int = 100):
+def update_user(db: Session, user_id: int, user_update: schemas.UserUpdateRequestBody):
     user_db = db.query(models.User).filter(
         models.User.id == user_id).one_or_none()
-    user_db.bio = user_update.bio
+    if user_update.newBio:
+        user_db.bio = user_update.newBio
+    if user_update.newUsername:
+        user_db.username = user_update.newUsername
     db.commit()
     db.refresh(user_db)
     return user_db
@@ -171,14 +174,21 @@ def create_tweet_comment(db: Session, user_id: int, comment: schemas.CommentCrea
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Tweet does not exist")
 
+def get_comment_by_id(db: Session, comment_id: int):
+    db_comment = db.query(models.Comments).filter(models.Comments.id == comment_id).one_or_none()
+    return db_comment
+
 
 def get_comments_for_user(db: Session, user_id: int, skip: int = 0, limit: int = 100):
+    # Check the user exists first
     db_user = db.query(models.User).filter(
         models.User.id == user_id).one_or_none()
 
     if not db_user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="User does not exist")
+    
+    # User exists - proceed to return comments
     return db_user.comments
 
 
@@ -369,5 +379,79 @@ def delete_tweet_like(db: Session, user_id: int, tweet_like_id: int,):
 
     # Data is valid - proceed to delete tweet like (un-like)
     db.delete(db_tweet_like)
+    db.commit()
+    return 
+
+
+# --------------------
+
+###############
+# Comment Likes #
+###############
+
+def get_comment_like_by_id(db: Session, comment_like_id: int):
+    """Get a single comment_like object/row
+    """
+    return db.query(models.CommentLikes).filter(models.CommentLikes.id == comment_like_id).one_or_none()
+
+def get_all_comment_likes(db: Session):
+    return db.query(models.CommentLikes).all()
+
+def get_all_comment_likes_for_comment(db: Session, comment_id: int):
+    # First check if comment exists
+
+    existing_comment = get_comment_by_id(db, comment_id)
+    if not existing_comment:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="Error. Comment does not exist")
+
+    db_comment_likes = db.query(models.CommentLikes).filter(
+        models.CommentLikes.comment_id == comment_id).all()
+
+    # user exists - proceed to return comments
+    return db_comment_likes
+
+def create_comment_like_for_comment(db: Session, comment_id: int, user_id: int):
+    """Add a comment like for comment && user
+    """
+    # Check if the comment exists
+    existing_comment = get_comment_by_id(db, comment_id)
+    if not existing_comment:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="Error. Comment does not exist")
+
+    # Check if comment like already exists
+    db_comment_like = db.query(models.CommentLikes).filter(models.CommentLikes.comment_id == comment_id, models.CommentLikes.user_id == user_id).first()
+
+    if db_comment_like:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="Error. Already liked comment.")
+
+    db_comment_like = models.CommentLikes(
+        user_id =user_id,
+        comment_id = comment_id
+    )
+
+    db.add(db_comment_like)
+    db.commit()
+    db.refresh(db_comment_like)
+    return db_comment_like
+
+
+def delete_comment_like(db: Session, user_id: int, comment_like_id: int,):
+    """Delete (Unlike) a comment
+    """
+    db_comment_like = db.query(models.CommentLikes).filter(models.CommentLikes.id == comment_like_id).one_or_none()
+
+    if not db_comment_like:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="Error. Cannot Delete. Bad ID for Like")
+
+    # First check if comment like and user match
+    db_user = get_user_by_id(db, user_id)
+    if not db_user:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="Error. User does not exist.")
+    
+    if db_user.id != db_comment_like.user_id:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, detail="Unauthorized.")
+
+    # Data is valid - proceed to delete comment like (un-like)
+    db.delete(db_comment_like)
     db.commit()
     return 
