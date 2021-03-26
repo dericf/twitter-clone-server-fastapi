@@ -79,10 +79,12 @@ def delete_user(db: Session, user_id: int):
 ##########
 # TWEETS #
 ##########
+def get_tweet_by_id(db: Session, tweet_id: int):
+    return db.query(models.Tweet).filter(models.Tweet.id == tweet_id).one_or_none()
+    
+
 def get_tweets(db: Session, skip: int = 0, limit: int = 100):
-    result = db.query(models.Tweet).offset(skip).limit(limit).all()
-    map(lambda r: print(dict(r)), result)
-    return result
+    return db.query(models.Tweet).offset(skip).limit(limit).all()
 
 
 def get_tweets_for_user(db: Session, user_id: int, skip: int = 0, limit: int = 100):
@@ -309,3 +311,63 @@ def get_all_followers(db: Session, user_id: int):
         models.Follows.follows_user_id == user_id).all()
     print("DB Followers: ", db_followers)
     return db_followers
+
+###############
+# Tweet Likes #
+###############
+
+def get_tweet_like_by_id(db: Session, tweet_like_id: int):
+    """Get a single tweet_like object/row
+    """
+    return db.query(models.TweetLikes).filter(models.TweetLikes.id == tweet_like_id).one_or_none()
+
+def get_all_tweet_likes(db: Session):
+    return db.query(models.TweetLikes).all()
+
+def get_all_tweet_likes_for_tweet(db: Session, tweet_id: int):
+    # First check if tweet exists
+
+    existing_tweet = get_tweet_by_id(db, tweet_id)
+    if not existing_tweet:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="Error. Tweet does not exist")
+
+    db_tweet_likes = db.query(models.TweetLikes).filter(
+        models.TweetLikes.tweet_id == tweet_id).all()
+
+    # user exists - proceed to return tweets
+    return db_tweet_likes
+
+def create_tweet_like_for_tweet(db: Session, tweet_id: int, user_id: int):
+    """Add a tweet like for tweet && user
+    """
+
+    db_tweet_like = models.TweetLikes(
+        user_id =user_id,
+        tweet_id = tweet_id
+    )
+    db.add(db_tweet_like)
+    db.commit()
+    db.refresh(db_tweet_like)
+    return db_tweet_like
+
+
+def delete_tweet_like(db: Session, user_id: int, tweet_like_id: int,):
+    """Delete (Unlike) a tweet
+    """
+    db_tweet_like = db.query(models.TweetLikes).filter(models.TweetLikes.id == tweet_like_id).one_or_none()
+
+    if not db_tweet_like:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="Error. Cannot Delete. Bad ID for Like")
+
+    # First check if tweet like and user match
+    db_user = get_user_by_id(db, user_id)
+    if not db_user:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="Error. User does not exist.")
+    
+    if db_user.id != db_tweet_like.user_id:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, detail="Unauthorized.")
+
+    # Data is valid - proceed to delete tweet like (un-like)
+    db.delete(db_tweet_like)
+    db.commit()
+    return 
