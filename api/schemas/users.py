@@ -65,4 +65,4 @@ class UserResponse(BaseModel):
     username: str
     bio: Optional[str]
     birthdate: Optional[date]
-    tweets: Optional[List[BasicTweet]] = []
+    # tweets: Optional[List[BasicTweet]] = []
