@@ -18,36 +18,16 @@ router = APIRouter(prefix="/tweets", tags=['tweets'])
 
 
 @router.get("/", response_model=List[schemas.TweetResponse])
-def get_all_tweets(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+def get_all_tweets(userId: Optional[int] = None, skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     """The GET method for this endpoint will send back all tweets     
     """
-    tweets = crud.get_tweets(db, skip=skip, limit=limit)
-    return [
-        schemas.TweetResponse(
-            tweetId=tweet.id,
-            content=tweet.content,
-            createdAt=tweet.created_at,
-            userId=tweet.user.id,
-            username=tweet.user.username
-        ) for tweet in tweets
-    ]
-
-
-@router.get("/{userId}", response_model=List[schemas.TweetResponse])
-def get_tweets(userId: int, skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    """
-    The GET method for this endpoint will send back specific 
-    tweets based on user.
-
-    An error will be returned if any userId does not exist.
-    """
-
-    tweets = crud.get_tweets_for_user(db, userId, skip=skip, limit=limit)
-
-    if not tweets:
-        raise HTTPException(status.HTTP_404_NOT_FOUND,
-                            detail="User does not exist")
-
+    if userId:
+        user = crud.get_user_by_id(db, userId)
+        if not user:
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="Error.Bad userId. User does not exist.")
+        tweets = crud.get_tweets_for_user(db, userId, skip=skip, limit=limit)
+    else:
+        tweets = crud.get_tweets(db, skip=skip, limit=limit)
     return [
         schemas.TweetResponse(
             tweetId=tweet.id,
