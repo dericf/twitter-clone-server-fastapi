@@ -18,7 +18,7 @@ from .core import security
 from .core.config import settings
 
 # Import all routers defined in other modules
-from .routers import auth, users, tweets, comments, followers, follows
+from .routers import auth, users, tweets, comments, followers, follows, tweet_likes
 
 app = FastAPI(
     # root_path=settings.API_V1_STR,
@@ -48,6 +48,7 @@ app.include_router(tweets.router)
 app.include_router(comments.router)
 app.include_router(follows.router)
 app.include_router(followers.router)
+app.include_router(tweet_likes.router)
 
 
 @app.get("/")
