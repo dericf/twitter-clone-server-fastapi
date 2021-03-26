@@ -40,4 +40,7 @@ class TweetLike(BaseModel):
         orm_mode = True
 
 class TweetLikeCreateRequestBody(BaseModel):
-    tweetId: Optional[int]
+    tweetId: int
+
+class TweetLikeDeleteRequestBody(BaseModel):
+    tweetId: int

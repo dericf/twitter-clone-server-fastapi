@@ -57,12 +57,13 @@ def like_a_tweet(
     # TODO return 201 created
     return schemas.EmptyResponse()
 
-@router.delete('/{tweet_id}', response_model=schemas.EmptyResponse)
-def delete_tweet(tweet_id: int,
-                 db: Session = Depends(get_db),
-                 current_user: schemas.User = Depends(get_current_user)):
+@router.delete('/', response_model=schemas.EmptyResponse)
+def delete_tweet_like(
+    request_body: schemas.TweetLikeDeleteRequestBody,
+    db: Session = Depends(get_db),
+    current_user: schemas.User = Depends(get_current_user)):
 
-    delete_successful = crud.delete_tweet_like(db, current_user.id, tweet_id)
+    delete_successful = crud.delete_tweet_like(db, current_user.id, request_body.tweetId)
     
     # TODO return status for delete?
     return schemas.EmptyResponse()
