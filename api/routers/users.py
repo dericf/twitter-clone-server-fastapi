@@ -69,6 +69,20 @@ def get_user(user_id: int, db: Session = Depends(get_db)):
     return db_user
 
 
+@router.put('/', response_model=schemas.UserUpdateResponseBody)
+def update_user(request_body:schemas.UserUpdateRequestBody,
+                 db: Session = Depends(get_db),
+                 current_user: schemas.UserWithPassword = Depends(get_current_user)):
+    
+    # Check that password is correct
+    if not security.verify_password(request_body.password, current_user.hashed_password):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="You are not authorized to update that user")
+    
+    # Update user attributes
+    user = crud.update_user(db, current_user.id, request_body)
+    return user
+
+
 @router.delete('/', response_model=schemas.EmptyResponse)
 def delete_user(request_body:schemas.UserDeleteRequestBody,
                  db: Session = Depends(get_db),
@@ -77,4 +91,4 @@ def delete_user(request_body:schemas.UserDeleteRequestBody,
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="You are not authorized to delete that user")
     delete_successful = crud.delete_user(db, current_user.id)
     
-    return {}
+    return schemas.EmptyResponse()
