@@ -3,10 +3,7 @@ from pydantic import BaseModel
 
 from datetime import datetime, date
 
-
-from .tweets import TweetBase
-
-class BasicTweet(TweetBase):
+class BasicTweet(BaseModel):
     id: int
     user_id: int
 
