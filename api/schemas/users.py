@@ -20,10 +20,6 @@ class UserCreate(UserBase):
     password: str
 
 
-class UserUpdate(BaseModel):
-    bio: str
-
-
 class User(UserBase):
     id: int
 
@@ -39,6 +35,22 @@ class UserWithPassword(User):
 
 class UserDeleteRequestBody(BaseModel):
     password: str
+
+
+class UserUpdateResponseBody(BaseModel):
+    id: int
+    email: str
+    username: str
+    bio: Optional[str]
+    birthdate: Optional[date]
+    
+    class Config:
+        orm_mode = True
+
+class UserUpdateRequestBody(BaseModel):
+    password: str
+    newUsername: Optional[str]
+    newBio: Optional[str]
     
 
 class BasicTweet(BaseModel):
