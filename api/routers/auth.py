@@ -1,6 +1,10 @@
 # FastAPI
-from fastapi import APIRouter, HTTPException, Request, Depends
-from fastapi.security import OAuth2PasswordRequestForm
+from fastapi import APIRouter, HTTPException, Depends
+from fastapi.security import OAuth2PasswordRequestForm, OAuth2
+
+from starlette.status import HTTP_403_FORBIDDEN
+from starlette.responses import RedirectResponse, Response, JSONResponse
+from starlette.requests import Request
 
 # SQLAlchemy
 from sqlalchemy.orm import Session
@@ -18,15 +22,28 @@ router = APIRouter(tags=['auth'])
 
 
 @router.post("/token")
-async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+async def login(response: Response, form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     """User will attempt to authenticate with a email/password flow
     """
-    user = security.authenticate_user(
+    try:
+        user = security.authenticate_user(
         db, form_data.username, form_data.password)
-    if not user:
-        # Wrong email or password provided
-        raise HTTPException(
-            status_code=400, detail="Incorrect username or password")
+        if not user:
+            # Wrong email or password provided
+            raise HTTPException(
+                status_code=400, detail="Incorrect username or password")
 
-    token = security.create_access_token(data={"sub": user.email})
-    return {"access_token": token, "token_type": "bearer"}
+        token = security.create_access_token(data={"sub": user.email})
+        response.set_cookie(
+            key="Authorization", 
+            value=f'Bearer {token}', 
+            samesite="None",
+            secure=True,
+            httponly=True, 
+            max_age=1800,
+            expires=1800
+        )
+        return {"access_token": token, "token_type": "bearer"}
+    except Exception as e:
+        response = Response(headers={"WWW-Authenticate": "Basic"}, status_code=401)
+        return response
