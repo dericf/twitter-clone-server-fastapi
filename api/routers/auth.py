@@ -27,7 +27,7 @@ async def login(response: Response, form_data: OAuth2PasswordRequestForm = Depen
     """
     try:
         user = security.authenticate_user(
-        db, form_data.username, form_data.password)
+            db, form_data.username, form_data.password)
         if not user:
             # Wrong email or password provided
             raise HTTPException(
@@ -35,15 +35,24 @@ async def login(response: Response, form_data: OAuth2PasswordRequestForm = Depen
 
         token = security.create_access_token(data={"sub": user.email})
         response.set_cookie(
-            key="Authorization", 
-            value=f'Bearer {token}', 
+            key="Authorization",
+            value=f'Bearer {token}',
             samesite="None",
             secure=True,
-            httponly=True, 
+            httponly=True,
             max_age=1800,
             expires=1800
         )
         return {"access_token": token, "token_type": "bearer"}
     except Exception as e:
-        response = Response(headers={"WWW-Authenticate": "Basic"}, status_code=401)
+        response = Response(
+            headers={"WWW-Authenticate": "Basic"}, status_code=401)
         return response
+
+
+@router.get("/logout")
+async def remove_cookie_and_redirect():
+    # TODO: Perhaps get the redirect url from the cookie
+    response = RedirectResponse(url="/")
+    response.delete_cookie("Authorization")
+    return response
