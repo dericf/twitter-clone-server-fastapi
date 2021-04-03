@@ -45,9 +45,10 @@ async def login(response: Response, form_data: OAuth2PasswordRequestForm = Depen
         )
         return {"access_token": token, "token_type": "bearer"}
     except Exception as e:
-        response = Response(
-            headers={"WWW-Authenticate": "Basic"}, status_code=401)
-        return response
+        response = JSONResponse(
+            headers={"WWW-Authenticate": "Basic"}, status_code=400
+            )
+        return {"access_token": None, "token_type": None}
 
 
 @router.get("/logout")
