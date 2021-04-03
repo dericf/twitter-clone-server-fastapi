@@ -67,7 +67,7 @@ def create_follow_record_for_user(
     return schemas.EmptyResponse()
 
 
-@router.delete('/{tweet_id}', response_model=schemas.EmptyResponse)
+@router.delete('/', response_model=schemas.EmptyResponse)
 def delete_follow_relationship(
     request_body: schemas.FollowsDeleteRequestBody,
     db: Session = Depends(get_db),
