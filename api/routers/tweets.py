@@ -24,7 +24,8 @@ def get_all_tweets(userId: Optional[int] = None, skip: int = 0, limit: int = 100
     if userId:
         user = crud.get_user_by_id(db, userId)
         if not user:
-            raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="Error.Bad userId. User does not exist.")
+            raise HTTPException(status.HTTP_400_BAD_REQUEST,
+                                detail="Error.Bad userId. User does not exist.")
         tweets = crud.get_tweets_for_user(db, userId, skip=skip, limit=limit)
     else:
         tweets = crud.get_tweets(db, skip=skip, limit=limit)
@@ -60,8 +61,9 @@ def update_tweet(
         request_body: schemas.TweetUpdate,
         db: Session = Depends(get_db),
         current_user: schemas.User = Depends(get_current_user)):
-    update_successful = crud.update_tweet(db, current_user.id, tweet_id, request_body.newContent)
-    
+    update_successful = crud.update_tweet(
+        db, current_user.id, tweet_id, request_body.newContent)
+
     return {}
 
 
@@ -70,5 +72,28 @@ def delete_tweet(tweet_id: int,
                  db: Session = Depends(get_db),
                  current_user: schemas.User = Depends(get_current_user)):
     delete_successful = crud.delete_tweet(db, current_user.id, tweet_id)
-    
+
     return {}
+
+
+@router.get("/liked", response_model=List[schemas.TweetResponse])
+def get_all_tweets_liked_by_user(
+    skip: int = 0, 
+    limit: int = 100, 
+    db: Session = Depends(get_db), 
+    current_user: schemas.User = Depends(get_current_user)):
+    """Return all tweets liked by the authenticated user
+    """
+    
+    
+    tweets = crud.get_tweets_liked_by_user(db, current_user.id, skip=skip, limit=limit)
+    
+    return [
+        schemas.TweetResponse(
+            tweetId=tweet.id,
+            content=tweet.content,
+            createdAt=tweet.created_at,
+            userId=tweet.user.id,
+            username=tweet.user.username
+        ) for tweet in tweets
+    ]
