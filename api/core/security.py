@@ -60,7 +60,7 @@ def authenticate_user(db: Session, email: str, password: str) -> Union[bool, Use
     """Based on the provided email & password, verify that the credentials match
     the records contained in the database.
     """
-    user = crud.get_user_by_email(db, email)
+    user = crud.get_user_by_email_or_username(db, email)
     if not user:
         # No user with that email exists in the database
         return False
