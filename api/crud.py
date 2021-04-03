@@ -3,6 +3,7 @@ from fastapi import status, HTTPException
 
 # SQLAlchemy
 from sqlalchemy.orm import Session
+from sqlalchemy import or_
 
 # Types
 from typing import Optional
@@ -32,6 +33,13 @@ def get_user_by_username(db: Session, username: str):
     """
     return db.query(models.User).filter(models.User.username == username).first()
 
+
+def get_user_by_email_or_username(db: Session, email: str):
+    """Get a single user by email or by uername
+    """
+    query = db.query(models.User).filter(or_(models.User.email == email, models.User.username == email))
+    # print(query.statement.compile(engine))
+    return query.first()
 
 def get_users(db: Session, skip: int = 0, limit: int = 100):
     """Get all users
@@ -84,14 +92,16 @@ def delete_user(db: Session, user_id: int):
 ##########
 def get_tweet_by_id(db: Session, tweet_id: int):
     return db.query(models.Tweet).filter(models.Tweet.id == tweet_id).one_or_none()
-    
+
 
 def get_tweets(db: Session, skip: int = 0, limit: int = 100):
-    return db.query(models.Tweet).offset(skip).limit(limit).all()
+    print("GETTING TWEETS")
+    return db.query(models.Tweet).order_by(models.Tweet.created_at.desc()).offset(skip).limit(5).all()
 
 
 def get_tweets_for_user(db: Session, user_id: int, skip: int = 0, limit: int = 100):
     # First check if user exists
+    print("GETTING TWEETS FOR USER")
     db_user = db.query(models.User).filter(
         models.User.id == user_id).one_or_none()
 
@@ -100,7 +110,24 @@ def get_tweets_for_user(db: Session, user_id: int, skip: int = 0, limit: int = 1
             status_code=status.HTTP_400_BAD_REQUEST, detail="User does not exist")
 
     # user exists - proceed to return tweets
-    return db_user.tweets
+    tweets = db.query(models.Tweet).filter(models.Tweet.user_id == user_id).order_by(
+        models.Tweet.created_at.desc()).limit(limit).all()
+    return tweets
+
+
+def get_tweets_liked_by_user(db: Session, user_id: int, skip: int = 0, limit: int = 100):
+    # First check if user exists
+    print("GETTING TWEETS FOR USER")
+    db_user = db.query(models.User).filter(
+        models.User.id == user_id).one_or_none()
+
+    if not db_user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="User does not exist")
+
+    # user exists - proceed to return tweets
+    tweets = [tweet_like.tweet for tweet_like in db_user.tweet_likes]
+    return tweets
 
 
 def create_user_tweet(db: Session, tweet: schemas.TweetCreate, user_id: int):
@@ -174,8 +201,10 @@ def create_tweet_comment(db: Session, user_id: int, comment: schemas.CommentCrea
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Tweet does not exist")
 
+
 def get_comment_by_id(db: Session, comment_id: int):
-    db_comment = db.query(models.Comments).filter(models.Comments.id == comment_id).one_or_none()
+    db_comment = db.query(models.Comments).filter(
+        models.Comments.id == comment_id).one_or_none()
     return db_comment
 
 
@@ -187,7 +216,7 @@ def get_comments_for_user(db: Session, user_id: int, skip: int = 0, limit: int =
     if not db_user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="User does not exist")
-    
+
     # User exists - proceed to return comments
     return db_user.comments
 
@@ -326,34 +355,39 @@ def get_all_followers(db: Session, user_id: int):
 # Tweet Likes #
 ###############
 
+
 def get_tweet_like_by_id(db: Session, tweet_like_id: int):
     """Get a single tweet_like object/row
     """
     return db.query(models.TweetLikes).filter(models.TweetLikes.id == tweet_like_id).one_or_none()
 
+
 def get_all_tweet_likes(db: Session):
-    return db.query(models.TweetLikes).all()
+    return db.query(models.TweetLikes).limit(2).all()
+
 
 def get_all_tweet_likes_for_tweet(db: Session, tweet_id: int):
     # First check if tweet exists
-
+    print("Getting tweet likes!")
     existing_tweet = get_tweet_by_id(db, tweet_id)
     if not existing_tweet:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="Error. Tweet does not exist")
+        raise HTTPException(status.HTTP_400_BAD_REQUEST,
+                            detail="Error. Tweet does not exist")
 
     db_tweet_likes = db.query(models.TweetLikes).filter(
-        models.TweetLikes.tweet_id == tweet_id).all()
+        models.TweetLikes.tweet_id == tweet_id).limit(2).all()
 
     # user exists - proceed to return tweets
     return db_tweet_likes
 
+
 def create_tweet_like_for_tweet(db: Session, tweet_id: int, user_id: int):
     """Add a tweet like for tweet && user
     """
-
+    #! TODO: first check if user has already like this tweet
     db_tweet_like = models.TweetLikes(
-        user_id =user_id,
-        tweet_id = tweet_id
+        user_id=user_id,
+        tweet_id=tweet_id
     )
     db.add(db_tweet_like)
     db.commit()
@@ -361,26 +395,30 @@ def create_tweet_like_for_tweet(db: Session, tweet_id: int, user_id: int):
     return db_tweet_like
 
 
-def delete_tweet_like(db: Session, user_id: int, tweet_like_id: int,):
+def delete_tweet_like(db: Session, user_id: int, tweet_id: int,):
     """Delete (Unlike) a tweet
     """
-    db_tweet_like = db.query(models.TweetLikes).filter(models.TweetLikes.id == tweet_like_id).one_or_none()
+    db_tweet_like = db.query(models.TweetLikes).filter(
+        models.TweetLikes.tweet_id == tweet_id).first()
 
     if not db_tweet_like:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="Error. Cannot Delete. Bad ID for Like")
+        raise HTTPException(status.HTTP_400_BAD_REQUEST,
+                            detail="Error. Cannot Delete. Bad ID for Like")
 
     # First check if tweet like and user match
     db_user = get_user_by_id(db, user_id)
     if not db_user:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="Error. User does not exist.")
-    
+        raise HTTPException(status.HTTP_400_BAD_REQUEST,
+                            detail="Error. User does not exist.")
+
     if db_user.id != db_tweet_like.user_id:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, detail="Unauthorized.")
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED,
+                            detail="Unauthorized to unike this tweet.")
 
     # Data is valid - proceed to delete tweet like (un-like)
     db.delete(db_tweet_like)
     db.commit()
-    return 
+    return
 
 
 # --------------------
@@ -394,15 +432,18 @@ def get_comment_like_by_id(db: Session, comment_like_id: int):
     """
     return db.query(models.CommentLikes).filter(models.CommentLikes.id == comment_like_id).one_or_none()
 
+
 def get_all_comment_likes(db: Session):
     return db.query(models.CommentLikes).all()
+
 
 def get_all_comment_likes_for_comment(db: Session, comment_id: int):
     # First check if comment exists
 
     existing_comment = get_comment_by_id(db, comment_id)
     if not existing_comment:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="Error. Comment does not exist")
+        raise HTTPException(status.HTTP_400_BAD_REQUEST,
+                            detail="Error. Comment does not exist")
 
     db_comment_likes = db.query(models.CommentLikes).filter(
         models.CommentLikes.comment_id == comment_id).all()
@@ -410,23 +451,27 @@ def get_all_comment_likes_for_comment(db: Session, comment_id: int):
     # user exists - proceed to return comments
     return db_comment_likes
 
+
 def create_comment_like_for_comment(db: Session, comment_id: int, user_id: int):
     """Add a comment like for comment && user
     """
     # Check if the comment exists
     existing_comment = get_comment_by_id(db, comment_id)
     if not existing_comment:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="Error. Comment does not exist")
+        raise HTTPException(status.HTTP_400_BAD_REQUEST,
+                            detail="Error. Comment does not exist")
 
     # Check if comment like already exists
-    db_comment_like = db.query(models.CommentLikes).filter(models.CommentLikes.comment_id == comment_id, models.CommentLikes.user_id == user_id).first()
+    db_comment_like = db.query(models.CommentLikes).filter(
+        models.CommentLikes.comment_id == comment_id, models.CommentLikes.user_id == user_id).first()
 
     if db_comment_like:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="Error. Already liked comment.")
+        raise HTTPException(status.HTTP_400_BAD_REQUEST,
+                            detail="Error. Already liked comment.")
 
     db_comment_like = models.CommentLikes(
-        user_id =user_id,
-        comment_id = comment_id
+        user_id=user_id,
+        comment_id=comment_id
     )
 
     db.add(db_comment_like)
@@ -438,20 +483,24 @@ def create_comment_like_for_comment(db: Session, comment_id: int, user_id: int):
 def delete_comment_like(db: Session, user_id: int, comment_like_id: int,):
     """Delete (Unlike) a comment
     """
-    db_comment_like = db.query(models.CommentLikes).filter(models.CommentLikes.id == comment_like_id).one_or_none()
+    db_comment_like = db.query(models.CommentLikes).filter(
+        models.CommentLikes.id == comment_like_id).one_or_none()
 
     if not db_comment_like:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="Error. Cannot Delete. Bad ID for Like")
+        raise HTTPException(status.HTTP_400_BAD_REQUEST,
+                            detail="Error. Cannot Delete. Bad ID for Like")
 
     # First check if comment like and user match
     db_user = get_user_by_id(db, user_id)
     if not db_user:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="Error. User does not exist.")
-    
+        raise HTTPException(status.HTTP_400_BAD_REQUEST,
+                            detail="Error. User does not exist.")
+
     if db_user.id != db_comment_like.user_id:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, detail="Unauthorized.")
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED,
+                            detail="Unauthorized.")
 
     # Data is valid - proceed to delete comment like (un-like)
     db.delete(db_comment_like)
     db.commit()
-    return 
+    return
