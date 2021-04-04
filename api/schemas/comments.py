@@ -5,7 +5,7 @@ from pydantic import BaseModel
 
 class CommentBase(BaseModel):
     id: Optional[int]
-    user_id: int
+    userId: int
     tweet_id: int
     content: str
 

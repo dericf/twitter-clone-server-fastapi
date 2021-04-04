@@ -6,7 +6,7 @@ from datetime import datetime, date
 
 class BasicTweet(BaseModel):
     id: int
-    user_id: int
+    userId: int
 
     class Config:
         orm_mode = True

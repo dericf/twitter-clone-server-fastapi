@@ -17,7 +17,7 @@ class TweetUpdate(BaseModel):
 
 class Tweet(TweetBase):
     id: int
-    user_id: int
+    userId: int
     username: str
     content: str
     created_at: datetime
