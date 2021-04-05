@@ -31,7 +31,7 @@ async def login(response: Response, form_data: OAuth2PasswordRequestForm = Depen
         if not user:
             # Wrong email or password provided
             raise HTTPException(
-                status_code=400, detail="Incorrect username or password")
+                status_code=401, detail="Incorrect username or password")
 
         token = security.create_access_token(data={"sub": user.email})
         response.set_cookie(
@@ -45,15 +45,13 @@ async def login(response: Response, form_data: OAuth2PasswordRequestForm = Depen
         )
         return {"access_token": token, "token_type": "bearer"}
     except Exception as e:
-        response = JSONResponse(
-            headers={"WWW-Authenticate": "Basic"}, status_code=400
-            )
-        return {"access_token": None, "token_type": None}
+        raise HTTPException(
+            status_code=401, detail="Incorrect username or password")
 
 
 @router.get("/logout")
 async def remove_cookie_and_redirect():
     # TODO: Perhaps get the redirect url from the cookie
-    response = RedirectResponse(url="/")
+    response = RedirectResponse(url="/login")
     response.delete_cookie("Authorization")
     return response
