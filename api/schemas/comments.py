@@ -6,7 +6,7 @@ from pydantic import BaseModel
 class CommentBase(BaseModel):
     id: Optional[int]
     userId: int
-    tweet_id: int
+    tweetId: int
     content: str
 
 class Comment(CommentBase):
@@ -16,11 +16,11 @@ class Comment(CommentBase):
 
 class CommentCreate(BaseModel):
     content: str
-    tweet_id: int
+    tweetId: int
 
 class CommentDelete(BaseModel):
-    comment_id: int
+    commentId: int
 
 class CommentUpdate(BaseModel):
-    comment_id: int
-    new_content: str
+    commentId: int
+    newContent: str

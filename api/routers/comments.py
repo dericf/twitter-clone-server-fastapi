@@ -10,26 +10,26 @@ from ..dependencies import get_db, get_current_user
 router = APIRouter(prefix="/comments", tags=['comments'])
 
 
-@router.get("/user/{user_id}/", response_model=List[schemas.Comment])
+@router.get("/user/{userId}/", response_model=List[schemas.Comment])
 def get_comments_for_user(
-    user_id: int, 
+    userId: int, 
     skip: int = 0, 
     limit: int = 100, 
     db: Session = Depends(get_db)
 ):
-    comments = crud.get_comments_for_user(db, user_id=user_id, skip=skip, limit=limit)
-    return comments
+    return crud.get_comments_for_user(db, user_id=userId, skip=skip, limit=limit)
+    
 
 
-@router.get("/tweet/{tweet_id}/", response_model=List[schemas.Comment])
+@router.get("/tweet/{tweetId}/", response_model=List[schemas.Comment])
 def get_comments_for_tweet(
-    tweet_id: int, 
+    tweetId: int, 
     skip: int = 0, 
     limit: int = 100, 
     db: Session = Depends(get_db)
 ):
-    comments = crud.get_comments_for_tweet(db, tweet_id=tweet_id, skip=skip, limit=limit)
-    return comments
+    return crud.get_comments_for_tweet(db, tweet_id=tweetId, skip=skip, limit=limit)
+    
 
 
 @router.post("/", response_model=schemas.Comment)

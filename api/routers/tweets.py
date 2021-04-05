@@ -55,23 +55,23 @@ def create_tweet_for_user(tweet_body: schemas.TweetCreate,
     )
 
 
-@router.put('/{tweet_id}', response_model=schemas.EmptyResponse)
+@router.put('/{tweetId}', response_model=schemas.EmptyResponse)
 def update_tweet(
-        tweet_id: int,
+        tweetId: int,
         request_body: schemas.TweetUpdate,
         db: Session = Depends(get_db),
         current_user: schemas.User = Depends(get_current_user)):
     update_successful = crud.update_tweet(
-        db, current_user.id, tweet_id, request_body.newContent)
+        db, current_user.id, tweetId, request_body.newContent)
 
     return {}
 
 
-@router.delete('/{tweet_id}', response_model=schemas.EmptyResponse)
-def delete_tweet(tweet_id: int,
+@router.delete('/{tweetId}', response_model=schemas.EmptyResponse)
+def delete_tweet(tweetId: int,
                  db: Session = Depends(get_db),
                  current_user: schemas.User = Depends(get_current_user)):
-    delete_successful = crud.delete_tweet(db, current_user.id, tweet_id)
+    delete_successful = crud.delete_tweet(db, current_user.id, tweetId)
 
     return {}
 
