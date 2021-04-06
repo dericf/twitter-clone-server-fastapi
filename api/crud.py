@@ -37,9 +37,11 @@ def get_user_by_username(db: Session, username: str):
 def get_user_by_email_or_username(db: Session, email: str):
     """Get a single user by email or by uername
     """
-    query = db.query(models.User).filter(or_(models.User.email == email, models.User.username == email))
+    query = db.query(models.User).filter(
+        or_(models.User.email == email, models.User.username == email))
     # print(query.statement.compile(engine))
     return query.first()
+
 
 def get_users(db: Session, skip: int = 0, limit: int = 100):
     """Get all users
@@ -172,6 +174,7 @@ def delete_tweet(db: Session, user_id: int, tweet_id: int):
                             detail="You are not authorized to delete that tweet")
     try:
         db.delete(db_tweet)
+        db.commit()
 
     except Exception as e:
         raise HTTPException(status.HTTP_400_BAD_REQUEST,
@@ -184,14 +187,14 @@ def delete_tweet(db: Session, user_id: int, tweet_id: int):
 def create_tweet_comment(db: Session, user_id: int, comment: schemas.CommentCreate):
     # First check that tweet exists
     db_tweet: schemas.Tweet = db.query(models.Tweet).filter(
-        models.Tweet.id == comment.tweet_id).one_or_none()
+        models.Tweet.id == comment.tweetId).one_or_none()
     if not db_tweet:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Tweet does not exist")
 
     # tweet exists - proceed to create comment
     db_comment = models.Comments(
-        tweet_id=comment.tweet_id, user_id=user_id, content=comment.content)
+        tweet_id=comment.tweetId, user_id=user_id, content=comment.content)
     try:
         db.add(db_comment)
         db.commit()
@@ -264,6 +267,7 @@ def delete_comment(db: Session, user_id: int, comment: schemas.CommentCreate):
 
     try:
         db.delete(comment_db)
+        db.commit()
 
     except Exception as e:
         raise HTTPException(
