@@ -6,8 +6,24 @@ import time
 import os
 
 
-# SQLALCHEMY_DATABASE_URL = "sqlite:///./twitter-clone.db"
-SQLALCHEMY_DATABASE_URL = os.environ.get("POSTGRES_URL") # "postgresql://admin:secret@db:5432/twitterdb"
+def get_db_connection_url():
+    env = os.environ.get("ENV")
+    print(env)
+    print(os.environ.get("LOCAL_DOCKER_INTERNAL_POSTGRES_URL"))
+    if not env:
+        return ""
+
+    if env == "development":
+        return os.environ.get("LOCAL_DOCKER_INTERNAL_POSTGRES_URL")
+
+    elif env == "staging":
+        return os.environ.get("STAGING_POSTGRES_URL")
+
+    elif env == "production":
+        return os.environ.get("PRODUCTION_POSTGRES_URL")
+
+
+SQLALCHEMY_DATABASE_URL = get_db_connection_url()
 
 engine = None
 SessionLocal = None
@@ -17,9 +33,11 @@ retries = 5
 while retries > 0:
     try:
         engine = create_engine(
-            SQLALCHEMY_DATABASE_URL #, connect_args={"check_same_thread": False}
-        ) # remove connect_args for non-sqlite db
-        SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+            # , connect_args={"check_same_thread": False}
+            SQLALCHEMY_DATABASE_URL
+        )  # remove connect_args for non-sqlite db
+        SessionLocal = sessionmaker(
+            autocommit=False, autoflush=False, bind=engine)
         Base = declarative_base()
         print("DB Connected")
         break
