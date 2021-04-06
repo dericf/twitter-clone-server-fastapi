@@ -1,5 +1,5 @@
 ---
-version: '3.9'
+version: "3.9"
 services:
   db:
     image: postgres
@@ -12,33 +12,19 @@ services:
     volumes:
       - ./pgdata:/var/lib/postgresql/data
     ports:
-      - '5433:5432'
-  # pgadmin:
-  #   image: dpage/pgadmin4
-  #   restart: always
-  #   environment:
-  #     PGADMIN_DEFAULT_EMAIL: $PGADMIN_DEFAULT_EMAIL
-  #     PGADMIN_DEFAULT_PASSWORD: $PGADMIN_DEFAULT_PASSWORD
-  #     PGADMIN_LISTEN_PORT: $PGADMIN_LISTEN_PORT
-  #   ports:
-  #     - '8081:80'
-  #   volumes:
-  #     - pgadmin-data:/var/lib/pgadmin
-  #   links:
-  #     - db:pgsql-server
+      - "5433:5432"
   web:
     build: .
     ports:
-      - '8001:80'
-    environment:
-      POSTGRES_URL: $POSTGRES_URL
+      - "8001:80"
     depends_on:
       - db
-    volumes: 
+    volumes:
       - ./api:/app/api
     environment:
       MODULE_NAME: "api.main"
       POSTGRES_URL: $POSTGRES_URL
+    env_file: .env
     entrypoint: /start-reload.sh # For dev only - adds hot-reloading
 volumes:
   db-data: null
