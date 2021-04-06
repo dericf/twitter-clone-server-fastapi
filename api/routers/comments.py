@@ -17,7 +17,16 @@ def get_comments_for_user(
     limit: int = 100, 
     db: Session = Depends(get_db)
 ):
-    return crud.get_comments_for_user(db, user_id=userId, skip=skip, limit=limit)
+    comments = crud.get_comments_for_user(db, user_id=userId, skip=skip, limit=limit)
+    return [
+        schemas.Comment(
+            id=comment.id,
+            userId=comment.user_id,
+            tweetId=comment.tweet_id,
+            content=comment.content,
+            username=comment.user.username
+        ) for comment in comments
+    ]
     
 
 
@@ -28,7 +37,16 @@ def get_comments_for_tweet(
     limit: int = 100, 
     db: Session = Depends(get_db)
 ):
-    return crud.get_comments_for_tweet(db, tweet_id=tweetId, skip=skip, limit=limit)
+    comments = crud.get_comments_for_tweet(db, tweet_id=tweetId, skip=skip, limit=limit)
+    return [
+        schemas.Comment(
+            id=comment.id,
+            userId=comment.user_id,
+            tweetId=comment.tweet_id,
+            content=comment.content,
+            username=comment.user.username
+        ) for comment in comments
+    ]
     
 
 
@@ -38,7 +56,14 @@ def create_comment_for_tweet(
     db: Session = Depends(get_db),
     current_user: schemas.UserWithPassword = Depends(get_current_user)
 ):
-    return crud.create_tweet_comment(db, current_user.id, request_body)
+    newComment = crud.create_tweet_comment(db, current_user.id, request_body)
+    return schemas.Comment(
+        id= newComment.id,
+        userId= newComment.user_id,
+        tweetId= newComment.tweet_id,
+        content= newComment.content,
+        username=newComment.user.username
+    )
 
 
 @router.put("/", response_model=schemas.Comment)
@@ -47,7 +72,15 @@ def update_comment(
     db: Session = Depends(get_db),
     current_user: schemas.UserWithPassword = Depends(get_current_user)
 ):
-    return crud.update_comment(db, current_user.id, request_body)
+    comment = crud.update_comment(db, current_user.id, request_body)
+
+    return schemas.Comment(
+            id=comment.id,
+            userId=comment.user_id,
+            tweetId=comment.tweet_id,
+            content=comment.content,
+            username=comment.user.username
+        )
 
 
 @router.delete("/", response_model=schemas.EmptyResponse)
