@@ -11,6 +11,7 @@ class CommentBase(BaseModel):
 
 class Comment(CommentBase):
     # tweet: List[Tweet] = []
+    username: str
     class Config:
         orm_mode = True
 
