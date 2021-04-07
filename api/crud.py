@@ -236,7 +236,7 @@ def get_comments_for_tweet(db: Session, tweet_id: int, skip: int = 0, limit: int
 
 def update_comment(db: Session, user_id: int, comment: schemas.CommentUpdate):
     db_comment: schemas.Comment = db.query(models.Comments).filter(
-        models.Comments.id == comment.comment_id).one_or_none()
+        models.Comments.id == comment.commentId).one_or_none()
 
     if not db_comment:
         raise HTTPException(
@@ -246,7 +246,7 @@ def update_comment(db: Session, user_id: int, comment: schemas.CommentUpdate):
         raise HTTPException(status.HTTP_401_UNAUTHORIZED,
                             detail="You are not authorized to update that comment")
 
-    db_comment.content = comment.new_content
+    db_comment.content = comment.newContent
     db.commit()
     db.refresh(db_comment)
     return db_comment
@@ -254,7 +254,7 @@ def update_comment(db: Session, user_id: int, comment: schemas.CommentUpdate):
 
 def delete_comment(db: Session, user_id: int, comment: schemas.CommentCreate):
     comment_db: schemas.Comment = db.query(models.Comments).filter(
-        models.Comments.id == comment.comment_id).one_or_none()
+        models.Comments.id == comment.commentId).one_or_none()
 
     if not comment_db:
         raise HTTPException(
