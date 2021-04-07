@@ -3,7 +3,7 @@ from fastapi import status, HTTPException
 
 # SQLAlchemy
 from sqlalchemy.orm import Session
-from sqlalchemy import or_
+from sqlalchemy import or_, func
 
 # Types
 from typing import Optional
@@ -23,7 +23,8 @@ def get_user_by_id(db: Session, user_id: int):
 def get_user_by_email(db: Session, email: str):
     """Get a single user by email
     """
-    query = db.query(models.User).filter(models.User.email == email)
+    query = db.query(models.User).filter(
+        func.lower(models.User.email) == func.lower(email))
     # print(query.statement.compile(engine))
     return query.one_or_none()
 
@@ -31,14 +32,14 @@ def get_user_by_email(db: Session, email: str):
 def get_user_by_username(db: Session, username: str):
     """Get a single user by username
     """
-    return db.query(models.User).filter(models.User.username == username).first()
+    return db.query(models.User).filter(func.lower(models.User.username) == func.lower(username)).first()
 
 
 def get_user_by_email_or_username(db: Session, email: str):
     """Get a single user by email or by uername
     """
     query = db.query(models.User).filter(
-        or_(models.User.email == email, models.User.username == email))
+        or_(func.lower(models.User.email) == func.lower(email), func.lower(models.User.username) == func.lower(email)))
     # print(query.statement.compile(engine))
     return query.first()
 
@@ -55,8 +56,8 @@ def create_user(db: Session, user: schemas.UserCreate):
     """Add a user
     """
     db_user = models.User(
-        email=user.email,
-        username=user.username,
+        email=user.email.lower(),
+        username=user.username.lower(),
         bio=user.bio,
         birthdate=user.birthdate,
         hashed_password=security.get_password_hash(user.password)
