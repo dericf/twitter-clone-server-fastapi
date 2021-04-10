@@ -8,8 +8,6 @@ import os
 
 def get_db_connection_url():
     env = os.environ.get("ENV")
-    print(env)
-    print(os.environ.get("LOCAL_DOCKER_INTERNAL_POSTGRES_URL"))
     if not env:
         return ""
 
