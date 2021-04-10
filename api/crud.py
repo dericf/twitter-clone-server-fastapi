@@ -99,7 +99,7 @@ def get_tweet_by_id(db: Session, tweet_id: int):
 
 def get_tweets(db: Session, skip: int = 0, limit: int = 100):
     print("GETTING TWEETS")
-    return db.query(models.Tweet).order_by(models.Tweet.created_at.desc()).offset(skip).limit(5).all()
+    return db.query(models.Tweet).order_by(models.Tweet.created_at.desc()).offset(skip).limit(limit).all()
 
 
 def get_tweets_for_user(db: Session, user_id: int, skip: int = 0, limit: int = 100):
@@ -120,7 +120,7 @@ def get_tweets_for_user(db: Session, user_id: int, skip: int = 0, limit: int = 1
 
 def get_tweets_liked_by_user(db: Session, user_id: int, skip: int = 0, limit: int = 100):
     # First check if user exists
-    print("GETTING TWEETS FOR USER")
+
     db_user = db.query(models.User).filter(
         models.User.id == user_id).one_or_none()
 
@@ -129,8 +129,11 @@ def get_tweets_liked_by_user(db: Session, user_id: int, skip: int = 0, limit: in
             status_code=status.HTTP_400_BAD_REQUEST, detail="User does not exist")
 
     # user exists - proceed to return tweets
-    tweets = [tweet_like.tweet for tweet_like in db_user.tweet_likes]
-    return tweets
+    likes = db.query(models.TweetLikes).filter(models.TweetLikes.user_id == user_id).order_by(
+        models.TweetLikes.id.desc()).offset(skip).limit(limit).all()
+
+    # tweets = [tweet_like.tweet for tweet_like in db_user.tweet_likes]
+    return [like.tweet for like in likes]
 
 
 def create_user_tweet(db: Session, tweet: schemas.TweetCreate, user_id: int):
