@@ -40,6 +40,48 @@ def get_all_tweets(userId: Optional[int] = None, skip: int = 0, limit: int = 100
     ]
 
 
+@router.get("/liked", response_model=List[schemas.TweetResponse])
+def get_all_tweets_liked_by_user(
+        skip: int = 0,
+        limit: int = 100,
+        db: Session = Depends(get_db),
+        current_user: schemas.User = Depends(get_current_user)):
+    """Return all tweets liked by the authenticated user
+    """
+
+    tweets = crud.get_tweets_liked_by_user(
+        db, current_user.id, skip=skip, limit=limit)
+
+    return [
+        schemas.TweetResponse(
+            tweetId=tweet.id,
+            content=tweet.content,
+            createdAt=tweet.created_at,
+            userId=tweet.user.id,
+            username=tweet.user.username
+        ) for tweet in tweets
+    ]
+
+
+@router.get("/one/{tweetId}", response_model=schemas.TweetResponse)
+def get_single_tweet_by_id(
+    tweetId: int,
+    db: Session = Depends(get_db)
+):
+    """Return a single tweet based on a tweetId
+    """
+
+    tweet = crud.get_tweet_by_id(db, tweetId)
+
+    return schemas.TweetResponse(
+        tweetId=tweet.id,
+        content=tweet.content,
+        createdAt=tweet.created_at,
+        userId=tweet.user.id,
+        username=tweet.user.username
+    )
+
+
 @router.post("/", response_model=schemas.TweetResponse)
 def create_tweet_for_user(tweet_body: schemas.TweetCreate,
                           db: Session = Depends(get_db),
@@ -74,26 +116,3 @@ def delete_tweet(tweetId: int,
     delete_successful = crud.delete_tweet(db, current_user.id, tweetId)
 
     return {}
-
-
-@router.get("/liked", response_model=List[schemas.TweetResponse])
-def get_all_tweets_liked_by_user(
-    skip: int = 0, 
-    limit: int = 100, 
-    db: Session = Depends(get_db), 
-    current_user: schemas.User = Depends(get_current_user)):
-    """Return all tweets liked by the authenticated user
-    """
-    
-    
-    tweets = crud.get_tweets_liked_by_user(db, current_user.id, skip=skip, limit=limit)
-    
-    return [
-        schemas.TweetResponse(
-            tweetId=tweet.id,
-            content=tweet.content,
-            createdAt=tweet.created_at,
-            userId=tweet.user.id,
-            username=tweet.user.username
-        ) for tweet in tweets
-    ]
