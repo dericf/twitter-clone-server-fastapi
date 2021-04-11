@@ -65,7 +65,7 @@ def create_comment_for_tweet(
         tweetId=newComment.tweet_id,
         content=newComment.content,
         username=newComment.user.username,
-        createdAt=comment.created_at
+        createdAt=newComment.created_at
     )
 
 
