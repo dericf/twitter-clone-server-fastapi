@@ -229,7 +229,7 @@ def get_comments_for_user(db: Session, user_id: int, skip: int = 0, limit: int =
     # TODO: temporarily sort list here to have newest first
     # User exists - proceed to return comments
     # db_user.comments.sort(key=lambda comment: datetime.strptime(comment.created_at, "%d-%b-%y"))
-    return db.query(models.Comments).filter(models.Comments.user_id == user_id).order_by(models.Comments.id.desc()).offset(skip).limit(limit).all()
+    return db.query(models.Comments).filter(models.Comments.user_id == user_id).order_by(models.Comments.created_at.desc()).offset(skip).limit(limit).all()
 
 
 def get_comments_for_tweet(db: Session, tweet_id: int, skip: int = 0, limit: int = 100):
@@ -240,7 +240,7 @@ def get_comments_for_tweet(db: Session, tweet_id: int, skip: int = 0, limit: int
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Tweet does not exist")
     # return db_tweet.comments
-    return db.query(models.Comments).filter(models.Comments.tweet_id == tweet_id).order_by(models.Comments.id.desc()).offset(skip).limit(limit).all()
+    return db.query(models.Comments).filter(models.Comments.tweet_id == tweet_id).order_by(models.Comments.created_at.desc()).offset(skip).all()
 
 
 def update_comment(db: Session, user_id: int, comment: schemas.CommentUpdate):
