@@ -12,6 +12,7 @@ from typing import Optional
 from . import models, schemas
 from .database import engine
 from .core import security
+import datetime
 
 
 def get_user_by_id(db: Session, user_id: int):
@@ -223,9 +224,12 @@ def get_comments_for_user(db: Session, user_id: int, skip: int = 0, limit: int =
     if not db_user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="User does not exist")
-
+    # TODO: Should be joining and setting relationship order either here
+    # TODO: or refereably higher up in the model definitions
+    # TODO: temporarily sort list here to have newest first
     # User exists - proceed to return comments
-    return db_user.comments
+    # db_user.comments.sort(key=lambda comment: datetime.strptime(comment.created_at, "%d-%b-%y"))
+    return db.query(models.Comments).filter(models.Comments.user_id == user_id).order_by(models.Comments.id.desc()).offset(skip).limit(limit).all()
 
 
 def get_comments_for_tweet(db: Session, tweet_id: int, skip: int = 0, limit: int = 100):
@@ -235,7 +239,8 @@ def get_comments_for_tweet(db: Session, tweet_id: int, skip: int = 0, limit: int
     if not db_tweet:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Tweet does not exist")
-    return db_tweet.comments
+    # return db_tweet.comments
+    return db.query(models.Comments).filter(models.Comments.tweet_id == tweet_id).order_by(models.Comments.id.desc()).offset(skip).limit(limit).all()
 
 
 def update_comment(db: Session, user_id: int, comment: schemas.CommentUpdate):
