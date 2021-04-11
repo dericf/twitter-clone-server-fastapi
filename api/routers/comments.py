@@ -12,80 +12,84 @@ router = APIRouter(prefix="/comments", tags=['comments'])
 
 @router.get("/user/{userId}/", response_model=List[schemas.Comment])
 def get_comments_for_user(
-    userId: int, 
-    skip: int = 0, 
-    limit: int = 100, 
+    userId: int,
+    skip: int = 0,
+    limit: int = 100,
     db: Session = Depends(get_db)
 ):
-    comments = crud.get_comments_for_user(db, user_id=userId, skip=skip, limit=limit)
+    comments = crud.get_comments_for_user(
+        db, user_id=userId, skip=skip, limit=limit)
     return [
         schemas.Comment(
             id=comment.id,
             userId=comment.user_id,
             tweetId=comment.tweet_id,
             content=comment.content,
-            username=comment.user.username
+            username=comment.user.username,
+            createdAt=comment.created_at
         ) for comment in comments
     ]
-    
 
 
 @router.get("/tweet/{tweetId}/", response_model=List[schemas.Comment])
 def get_comments_for_tweet(
-    tweetId: int, 
-    skip: int = 0, 
-    limit: int = 100, 
+    tweetId: int,
+    skip: int = 0,
+    limit: int = 0,
     db: Session = Depends(get_db)
 ):
-    comments = crud.get_comments_for_tweet(db, tweet_id=tweetId, skip=skip, limit=limit)
+    comments = crud.get_comments_for_tweet(
+        db, tweet_id=tweetId, skip=skip, limit=limit)
     return [
         schemas.Comment(
             id=comment.id,
             userId=comment.user_id,
             tweetId=comment.tweet_id,
             content=comment.content,
-            username=comment.user.username
+            username=comment.user.username,
+            createdAt=comment.created_at
         ) for comment in comments
     ]
-    
 
 
 @router.post("/", response_model=schemas.Comment)
 def create_comment_for_tweet(
-    request_body: schemas.CommentCreate, 
+    request_body: schemas.CommentCreate,
     db: Session = Depends(get_db),
     current_user: schemas.UserWithPassword = Depends(get_current_user)
 ):
     newComment = crud.create_tweet_comment(db, current_user.id, request_body)
     return schemas.Comment(
-        id= newComment.id,
-        userId= newComment.user_id,
-        tweetId= newComment.tweet_id,
-        content= newComment.content,
-        username=newComment.user.username
+        id=newComment.id,
+        userId=newComment.user_id,
+        tweetId=newComment.tweet_id,
+        content=newComment.content,
+        username=newComment.user.username,
+        createdAt=comment.created_at
     )
 
 
 @router.put("/", response_model=schemas.Comment)
 def update_comment(
-    request_body: schemas.CommentUpdate, 
+    request_body: schemas.CommentUpdate,
     db: Session = Depends(get_db),
     current_user: schemas.UserWithPassword = Depends(get_current_user)
 ):
     comment = crud.update_comment(db, current_user.id, request_body)
 
     return schemas.Comment(
-            id=comment.id,
-            userId=comment.user_id,
-            tweetId=comment.tweet_id,
-            content=comment.content,
-            username=comment.user.username
-        )
+        id=comment.id,
+        userId=comment.user_id,
+        tweetId=comment.tweet_id,
+        content=comment.content,
+        username=comment.user.username,
+        createdAt=comment.created_at
+    )
 
 
 @router.delete("/", response_model=schemas.EmptyResponse)
 def delete_comment(
-    request_body: schemas.CommentDelete, 
+    request_body: schemas.CommentDelete,
     db: Session = Depends(get_db),
     current_user: schemas.UserWithPassword = Depends(get_current_user)
 ):
