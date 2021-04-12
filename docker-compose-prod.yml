@@ -17,12 +17,12 @@ services:
       - traefik.http.services.app.loadbalancer.server.port=80
       # Make Traefik use this domain in HTTP
       - traefik.http.routers.app-http.entrypoints=http
-      - traefik.http.routers.app-http.rule=Host(`fastapi-with-traefik.example.com`)
+      - traefik.http.routers.app-http.rule=Host(`twitter-clone-fastapi.programmertutor.com`)
       # Use the traefik-public network (declared below)
       - traefik.docker.network=traefik-public
       # Make Traefik use this domain in HTTPS
       - traefik.http.routers.app-https.entrypoints=https
-      - traefik.http.routers.app-https.rule=Host(`fastapi-with-traefik.example.com`)
+      - traefik.http.routers.app-https.rule=Host(`twitter-clone-fastapi.programmertutor.com`)
       - traefik.http.routers.app-https.tls=true
       # Use the "le" (Let's Encrypt) resolver
       - traefik.http.routers.app-https.tls.certresolver=le
