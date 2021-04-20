@@ -1,7 +1,7 @@
 #
 # Utility functions for background tasks
 #
-async def send_registration_confirmation_email(email: str):
+async def send_registration_confirmation_email(email: str, confirmation_key: str):
     """Render the Email HTML (& PlainText) to a file
     """
     message: str = """ 
@@ -12,3 +12,4 @@ async def send_registration_confirmation_email(email: str):
     #     email_file.write(content)
 
     print(f'TESTING EMAIL CONFIRMATION')
+    print(confirmation_key)
