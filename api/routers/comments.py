@@ -52,6 +52,18 @@ def get_comments_for_tweet(
     ]
 
 
+@router.get("/count/tweet/{tweetId}/", response_model=schemas.TweetCommentCount)
+def get_comment_count_for_tweet(
+    tweetId: int,
+    db: Session = Depends(get_db)
+):
+    count = crud.get_comment_count_for_tweet(db, tweet_id=tweetId)
+
+    return schemas.TweetCommentCount(
+        count=count
+    )
+
+
 @router.post("/", response_model=schemas.Comment)
 def create_comment_for_tweet(
     request_body: schemas.CommentCreate,

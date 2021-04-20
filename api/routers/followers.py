@@ -22,7 +22,7 @@ def get_all_tweets(userId: int, db: Session = Depends(get_db)):
     """
     The GET method for this endpoint requires a userId and will send 
     back information about all users the follow that user. 
-    
+
     This endpoint will always return an array of objects. 
     """
     followers: List[schemas.Follower] = crud.get_all_followers(db, userId)
@@ -36,3 +36,14 @@ def get_all_tweets(userId: int, db: Session = Depends(get_db)):
         ) for follower in followers
     ]
 
+
+@router.get("/count/{userId}/", response_model=schemas.CountBase)
+def get_followers_count_for_user(
+    userId: int,
+    db: Session = Depends(get_db)
+):
+    count = crud.get_followers_for_user(db, user_id=userId)
+
+    return schemas.CountBase(
+        count=count
+    )

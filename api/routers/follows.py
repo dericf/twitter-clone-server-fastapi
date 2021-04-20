@@ -22,10 +22,10 @@ def get_follows(userId: int, db: Session = Depends(get_db)):
     """
     The GET method for this endpoint requires a userId and will send 
     back information about all users the userId follows . 
-    
+
     Returns:
     This endpoint will always return an array of objects.
-    
+
     Errors:
     An error will be returned if the userId does not exist.
     """
@@ -46,6 +46,18 @@ def get_follows(userId: int, db: Session = Depends(get_db)):
             birthdate=following.follows_user.birthdate
         ) for following in follows
     ]
+
+
+@router.get("/count/{userId}/", response_model=schemas.CountBase)
+def get_follows_count_for_user(
+    userId: int,
+    db: Session = Depends(get_db)
+):
+    count = crud.get_following_for_user(db, user_id=userId)
+
+    return schemas.CountBase(
+        count=count
+    )
 
 
 @router.post("/", response_model=schemas.EmptyResponse)
@@ -75,4 +87,4 @@ def delete_follow_relationship(
 ):
     delete_successful = crud.delete_follow_relationship(
         db, current_user.id, request_body.followUserId)
-    return {}
+    return schemas.EmptyResponse()
