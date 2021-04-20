@@ -1,5 +1,6 @@
 # Standard Library
 import os
+import time
 
 # FastAPI
 from fastapi import Depends, FastAPI, HTTPException, BackgroundTasks, Request
@@ -31,7 +32,15 @@ app = FastAPI(
 origins = [
     "http://localhost",
     "http://localhost:8080",
-    "http://localhost:3000", # Frontend NextJS Client
+    "http://localhost:3000",  # Frontend NextJS Client
+    # Production Client on Vercel HTTP
+    "http://twitter-clone-frontend-beryl.vercel.app",
+    "https://twitter-clone-frontend-beryl.vercel.app",  # Production Client on Vercel
+    # Alternate Production Client on Vercel HTTP
+    "http://twitter-clone.projects.programmertutor.com",
+    # Alternate Production Client on Vercel
+    "https://twitter-clone.programmertutor.com",
+    "https://www.twitter-clone.programmertutor.com"
 ]
 
 app.add_middleware(
@@ -40,6 +49,7 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["set-cookie"]
 )
 
 # Include All Routers
@@ -51,6 +61,22 @@ app.include_router(follows.router)
 app.include_router(followers.router)
 app.include_router(tweet_likes.router)
 app.include_router(comment_likes.router)
+
+
+@app.middleware("http")
+async def modify_location_header(request: Request, call_next):
+    """This is a very hacky fix for a glitch in the "location" response header
+    For some reason it sends back http instead of https so I manually 
+    overwrite it here. Definitely something that should be fixed upstream in 
+    configuration but this will work temporarily until I find the correct location.
+    """
+    response: Response = await call_next(request)
+
+    # Check for location response header
+    location = response.headers.get("location")
+    if location and os.environ.get("ENV") != "development":
+        response.headers["location"] = location.replace("http:", "https:")
+    return response
 
 
 @app.get("/")
