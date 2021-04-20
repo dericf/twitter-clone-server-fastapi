@@ -13,6 +13,7 @@ from ..core import security
 from ..core.config import settings
 from ..dependencies import get_db, get_current_user
 from .. import background_functions
+from ..core.utilities import generate_random_uuid
 
 router = APIRouter(prefix="/users", tags=['users'])
 
@@ -52,10 +53,13 @@ async def create_user(user: schemas.UserCreate, bg_tasks: BackgroundTasks, db: S
     db_user = crud.get_user_by_email(db, email=user.email)
     if db_user:
         raise HTTPException(status_code=400, detail="Email already registered")
-    print("Sending registration email")
+    # Generate a random uuid to email to the user
+    confirmation_key = generate_random_uuid()
+    newUser: schemas.User = crud.create_user(
+        db=db, user=user, confirmation_key=confirmation_key)
     bg_tasks.add_task(
-        background_functions.send_registration_confirmation_email, email=user.email)
-    return crud.create_user(db=db, user=user)
+        background_functions.send_registration_confirmation_email, email=user.email, confirmation_key=confirmation_key)
+    return newUser
 
 
 @router.put('/', response_model=schemas.UserUpdateResponseBody)
@@ -91,5 +95,21 @@ def delete_user(request_body: schemas.UserDeleteRequestBody,
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Wrong password")
     delete_successful = crud.delete_user(db, current_user.id)
+
+    return schemas.EmptyResponse()
+
+
+@router.post('/confirm-account/', response_model=schemas.EmptyResponse)
+async def confirm_account(request_body: schemas.UserAccountConfirmationRequestBody, db: Session = Depends(get_db)):
+    user: schemas.User = crud.get_user_by_confirmation_key(
+        db, request_body.confirmationKey)
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Bad key.")
+
+    # correct confirmation key was passed
+
+    crud.verify_account(db, user.id)
 
     return schemas.EmptyResponse()
