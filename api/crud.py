@@ -13,6 +13,7 @@ from . import models, schemas
 from .database import engine
 from .core import security
 import datetime
+from api.core.utilities import generate_random_uuid
 
 
 def get_user_by_id(db: Session, user_id: int):
@@ -27,6 +28,14 @@ def get_user_by_email(db: Session, email: str):
     query = db.query(models.User).filter(
         func.lower(models.User.email) == func.lower(email))
     # print(query.statement.compile(engine))
+    return query.one_or_none()
+
+
+def get_user_by_confirmation_key(db: Session, confirmation_key: str):
+    """Get a single user by confirmation key sent by email
+    """
+    query = db.query(models.User).filter(
+        func.lower(models.User.confirmation_key) == func.lower(confirmation_key))
     return query.one_or_none()
 
 
@@ -53,7 +62,7 @@ def get_users(db: Session, skip: int = 0, limit: int = 100):
     return query.all()
 
 
-def create_user(db: Session, user: schemas.UserCreate):
+def create_user(db: Session, user: schemas.UserCreate, confirmation_key: str):
     """Add a user
     """
     db_user = models.User(
@@ -62,6 +71,7 @@ def create_user(db: Session, user: schemas.UserCreate):
         bio=user.bio,
         birthdate=user.birthdate,
         hashed_password=security.get_password_hash(user.password)
+        # confirmation_key=confirmation_key
     )
     db.add(db_user)
     db.commit()
@@ -76,6 +86,17 @@ def update_user(db: Session, user_id: int, user_update: schemas.UserUpdateReques
         user_db.bio = user_update.newBio
     if user_update.newUsername:
         user_db.username = user_update.newUsername
+    db.commit()
+    db.refresh(user_db)
+    return user_db
+
+
+def verify_account(db: Session, user_id: int):
+    user_db = db.query(models.User).filter(
+        models.User.id == user_id).one_or_none()
+
+    user_db.confirmationKey = None
+    user_db.account_verified = True
     db.commit()
     db.refresh(user_db)
     return user_db
@@ -388,7 +409,7 @@ def get_all_tweet_likes_for_tweet(db: Session, tweet_id: int):
                             detail="Error. Tweet does not exist")
 
     db_tweet_likes = db.query(models.TweetLikes).filter(
-        models.TweetLikes.tweet_id == tweet_id).limit(2).all()
+        models.TweetLikes.tweet_id == tweet_id).all()
 
     # user exists - proceed to return tweets
     return db_tweet_likes
