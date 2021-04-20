@@ -24,9 +24,11 @@ def upgrade():
         sa.Column('username', sa.String, index=True),
         sa.Column('bio', sa.String, index=True),
         sa.Column('birthdate', sa.Date, index=True),
-        sa.Column('hashed_password', sa.String, nullable=False)
-    )
+        sa.Column('hashed_password', sa.String, nullable=False),
+        sa.Column('confirmation_key', sa.String, nullable=True),
+        sa.Column('account_verified', sa.Boolean, nullable=True, default=False)
 
+    )
 
 
 def downgrade():
