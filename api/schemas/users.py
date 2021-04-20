@@ -26,6 +26,7 @@ class User(UserBase):
     class Config:
         orm_mode = True
 
+
 class UserWithPassword(User):
     hashed_password: str
 
@@ -43,15 +44,16 @@ class UserUpdateResponseBody(BaseModel):
     username: str
     bio: Optional[str]
     birthdate: Optional[date]
-    
+
     class Config:
         orm_mode = True
+
 
 class UserUpdateRequestBody(BaseModel):
     password: str
     newUsername: Optional[str]
     newBio: Optional[str]
-    
+
 
 class BasicTweet(BaseModel):
     id: int
@@ -66,3 +68,7 @@ class UserResponse(BaseModel):
     bio: Optional[str]
     birthdate: Optional[date]
     # tweets: Optional[List[BasicTweet]] = []
+
+
+class UserAccountConfirmationRequestBody(BaseModel):
+    confirmationKey: str
