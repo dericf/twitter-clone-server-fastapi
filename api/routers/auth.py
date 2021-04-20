@@ -16,7 +16,9 @@ from typing import List
 from .. import schemas, crud
 from ..core import security
 from ..core.config import settings
-from ..dependencies import get_db
+from ..dependencies import get_db, get_current_user
+
+import os
 
 router = APIRouter(tags=['auth'])
 
@@ -37,11 +39,14 @@ async def login(response: Response, form_data: OAuth2PasswordRequestForm = Depen
         response.set_cookie(
             key="Authorization",
             value=f'Bearer {token}',
-            samesite="None",
-            secure=True,
+            samesite="Lax" if os.environ.get(
+                "ENV") == "development" else "None",
+            domain="localhost" if os.environ.get(
+                "ENV") == "development" else "dericfagnan.com",
+            secure=False if os.environ.get("ENV") == "development" else True,
             httponly=True,
-            max_age=1800,
-            expires=1800
+            max_age=60*30,
+            expires=60*30
         )
         return {"access_token": token, "token_type": "bearer"}
     except Exception as e:
@@ -49,9 +54,20 @@ async def login(response: Response, form_data: OAuth2PasswordRequestForm = Depen
             status_code=401, detail="Incorrect username or password")
 
 
-@router.get("/logout")
-async def remove_cookie_and_redirect():
-    # TODO: Perhaps get the redirect url from the cookie
-    response = RedirectResponse(url="/login")
-    response.delete_cookie("Authorization")
-    return response
+@router.post("/logout")
+async def remove_cookie_and_redirect(response: Response, current_user: schemas.User = Depends(get_current_user)):
+    # response.delete_cookie("Authorization")
+    print(response)
+    response.set_cookie(
+        key="Authorization",
+        value=f'',
+        samesite="Lax" if os.environ.get(
+            "ENV") == "development" else "None",
+        domain="localhost" if os.environ.get(
+            "ENV") == "development" else "dericfagnan.com",
+        secure=False if os.environ.get("ENV") == "development" else True,
+        httponly=True,
+        max_age=1,
+        expires=1
+    )
+    return {}
