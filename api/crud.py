@@ -538,3 +538,23 @@ def delete_comment_like(db: Session, user_id: int, comment_like_id: int,):
     db.delete(db_comment_like)
     db.commit()
     return
+
+
+###############
+#    Counts   #
+###############
+
+def get_comment_count_for_tweet(db: Session, tweet_id: int):
+    return db.query(models.Comments).filter(models.Comments.tweet_id == tweet_id).count()
+
+
+def get_like_count_for_tweet(db: Session, tweet_id: int):
+    return db.query(models.Comments).filter(models.Comments.tweet_id == tweet_id).count()
+
+
+def get_followers_for_user(db: Session, user_id: int):
+    return db.query(models.Follows).filter(models.Follows.follows_user_id == user_id).count()
+
+
+def get_following_for_user(db: Session, user_id: int):
+    return db.query(models.Follows).filter(models.Follows.user_id == user_id).count()
