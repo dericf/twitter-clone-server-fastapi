@@ -22,6 +22,8 @@ def upgrade():
         sa.Column('id', sa.Integer, primary_key=True, index=True),
         sa.Column('email', sa.String, unique=True, index=True, nullable=False),
         sa.Column('username', sa.String, index=True),
+        sa.Column('created_at', sa.Date, server_default=sa.func.now()),
+        sa.Column('updated_at', sa.Date, server_default=sa.func.now()),
         sa.Column('bio', sa.String, index=True),
         sa.Column('birthdate', sa.Date, index=True),
         sa.Column('hashed_password', sa.String, nullable=False),
