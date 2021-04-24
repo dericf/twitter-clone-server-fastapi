@@ -1,7 +1,9 @@
 fastapi[all]
-psycopg2
+psycopg2-binary
 sqlalchemy
 uvicorn[standard]
 python-jose[cryptography]
 bcrypt
 passlib[bcrypt]
+alembic
+sendgrid
