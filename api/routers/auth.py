@@ -27,31 +27,32 @@ router = APIRouter(tags=['auth'])
 async def login(response: Response, form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     """User will attempt to authenticate with a email/password flow
     """
-    try:
-        user = security.authenticate_user(
-            db, form_data.username, form_data.password)
-        if not user:
-            # Wrong email or password provided
-            raise HTTPException(
-                status_code=401, detail="Incorrect username or password")
 
-        token = security.create_access_token(data={"sub": user.email})
-        response.set_cookie(
-            key="Authorization",
-            value=f'Bearer {token}',
-            samesite="Lax" if os.environ.get(
-                "ENV") == "development" else "None",
-            domain="localhost" if os.environ.get(
-                "ENV") == "development" else "dericfagnan.com",
-            secure=False if os.environ.get("ENV") == "development" else True,
-            httponly=True,
-            max_age=60*30,
-            expires=60*30
-        )
-        return {"access_token": token, "token_type": "bearer"}
-    except Exception as e:
+    user = security.authenticate_user(
+        db, form_data.username, form_data.password)
+    if not user:
+        # Wrong email or password provided
         raise HTTPException(
             status_code=401, detail="Incorrect username or password")
+
+    if user.account_verified == False:
+        raise HTTPException(
+            status_code=400, detail="Email is not verified. Please check your email.")
+
+    token = security.create_access_token(data={"sub": user.email})
+    response.set_cookie(
+        key="Authorization",
+        value=f'Bearer {token}',
+        samesite="Lax" if os.environ.get(
+            "ENV") == "development" else "None",
+        domain="localhost" if os.environ.get(
+            "ENV") == "development" else "dericfagnan.com",
+        secure=False if os.environ.get("ENV") == "development" else True,
+        httponly=True,
+        max_age=60*30,
+        expires=60*30
+    )
+    return {"access_token": token, "token_type": "bearer"}
 
 
 @router.post("/logout")
