@@ -70,8 +70,8 @@ def create_user(db: Session, user: schemas.UserCreate, confirmation_key: str):
         username=user.username.lower(),
         bio=user.bio,
         birthdate=user.birthdate,
-        hashed_password=security.get_password_hash(user.password)
-        # confirmation_key=confirmation_key
+        hashed_password=security.get_password_hash(user.password),
+        confirmation_key=confirmation_key
     )
     db.add(db_user)
     db.commit()
