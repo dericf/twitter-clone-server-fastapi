@@ -120,13 +120,11 @@ def get_tweet_by_id(db: Session, tweet_id: int):
 
 
 def get_tweets(db: Session, skip: int = 0, limit: int = 100):
-    print("GETTING TWEETS")
     return db.query(models.Tweet).order_by(models.Tweet.created_at.desc()).offset(skip).limit(limit).all()
 
 
 def get_tweets_for_user(db: Session, user_id: int, skip: int = 0, limit: int = 100):
     # First check if user exists
-    print("GETTING TWEETS FOR USER")
     db_user = db.query(models.User).filter(
         models.User.id == user_id).one_or_none()
 
@@ -311,7 +309,6 @@ def delete_comment(db: Session, user_id: int, comment: schemas.CommentCreate):
 def get_all_users_following(db: Session, user_id: int):
     db_followers = db.query(models.Follows).filter(
         models.Follows.user_id == user_id).all()
-    print("DB Following: ", db_followers)
     return db_followers
 
 
@@ -382,7 +379,6 @@ def get_all_followers(db: Session, user_id: int):
     # User is valid - proceed to get all followers
     db_followers = db.query(models.Follows).filter(
         models.Follows.follows_user_id == user_id).all()
-    print("DB Followers: ", db_followers)
     return db_followers
 
 ###############
@@ -402,7 +398,6 @@ def get_all_tweet_likes(db: Session):
 
 def get_all_tweet_likes_for_tweet(db: Session, tweet_id: int):
     # First check if tweet exists
-    print("Getting tweet likes!")
     existing_tweet = get_tweet_by_id(db, tweet_id)
     if not existing_tweet:
         raise HTTPException(status.HTTP_400_BAD_REQUEST,
