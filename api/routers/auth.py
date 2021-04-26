@@ -56,9 +56,8 @@ async def login(response: Response, form_data: OAuth2PasswordRequestForm = Depen
 
 
 @router.post("/logout")
-async def remove_cookie_and_redirect(response: Response, current_user: schemas.User = Depends(get_current_user)):
+async def logout_and_expire_cookie(response: Response, current_user: schemas.User = Depends(get_current_user)):
     # response.delete_cookie("Authorization")
-    print(response)
     response.set_cookie(
         key="Authorization",
         value=f'',
