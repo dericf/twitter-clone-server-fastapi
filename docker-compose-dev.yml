@@ -13,10 +13,26 @@ services:
       - ./pgdata:/var/lib/postgresql/data
     ports:
       - "5433:5432"
+  graphql-engine:
+    image: hasura/graphql-engine:v1.3.3
+    ports:
+      - "8432:8080"
+    depends_on:
+      - "db"
+    restart: always
+    environment:
+      HASURA_GRAPHQL_DATABASE_URL: $LOCAL_DOCKER_INTERNAL_POSTGRES_URL
+      ## enable the console served by server
+      HASURA_GRAPHQL_ENABLE_CONSOLE: "true" # set to "false" to disable console
+      ## enable debugging mode. It is recommended to disable this in production
+      HASURA_GRAPHQL_DEV_MODE: "true"
+      HASURA_GRAPHQL_ENABLED_LOG_TYPES: startup, http-log, webhook-log, websocket-log, query-log
+      ## uncomment next line to set an admin secret
+      HASURA_GRAPHQL_ADMIN_SECRET: $SECRET_KEY
   web:
     build:
       context: .
-      dockerfile: Dockerfil-dev
+      dockerfile: Dockerfile-dev
     ports:
       - "8001:80"
     depends_on:
