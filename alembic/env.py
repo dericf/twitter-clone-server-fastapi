@@ -5,6 +5,8 @@ from sqlalchemy import pool
 
 from alembic import context
 
+from api.core.config import get_db_connection_url
+
 import os
 
 # this is the Alembic Config object, which provides
@@ -27,21 +29,6 @@ target_metadata = None
 # ... etc.
 
 
-def get_url():
-    env = os.environ.get("ENV")
-    if not env:
-        return ""
-
-    if env == "development":
-        return os.environ.get("LOCAL_POSTGRES_URL")
-
-    elif env == "staging":
-        return os.environ.get("STAGING_POSTGRES_URL")
-
-    elif env == "production":
-        return os.environ.get("PRODUCTION_POSTGRES_URL")
-
-
 def run_migrations_offline():
     """Run migrations in 'offline' mode.
 
@@ -55,7 +42,7 @@ def run_migrations_offline():
 
     """
     context.configure(
-        url=get_url(),
+        url=get_db_connection_url(),
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
@@ -72,7 +59,7 @@ def run_migrations_online():
     and associate a connection with the context.
 
     """
-    connectable = create_engine(get_url())
+    connectable = create_engine(get_db_connection_url())
 
     with connectable.connect() as connection:
         context.configure(
