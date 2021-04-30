@@ -43,14 +43,14 @@ async def login(response: Response, form_data: OAuth2PasswordRequestForm = Depen
     response.set_cookie(
         key="Authorization",
         value=f'Bearer {token}',
-        samesite="Lax" if os.environ.get(
-            "ENV") == "development" else "None",
-        domain="localhost" if os.environ.get(
-            "ENV") == "development" else "dericfagnan.com",
-        secure=False if os.environ.get("ENV") == "development" else True,
+        samesite="Lax" if "dev" in os.environ.get(
+            "ENV") else "None",
+        domain="localhost" if "dev" in os.environ.get(
+            "ENV") else "dericfagnan.com",
+        secure=False if "dev" in os.environ.get("ENV") else True,
         httponly=True,
-        max_age=60*30,
-        expires=60*30
+        max_age=60 * 30,
+        expires=60 * 30
     )
     return {"access_token": token, "token_type": "bearer"}
 
@@ -61,11 +61,11 @@ async def logout_and_expire_cookie(response: Response, current_user: schemas.Use
     response.set_cookie(
         key="Authorization",
         value=f'',
-        samesite="Lax" if os.environ.get(
-            "ENV") == "development" else "None",
-        domain="localhost" if os.environ.get(
-            "ENV") == "development" else "dericfagnan.com",
-        secure=False if os.environ.get("ENV") == "development" else True,
+        samesite="Lax" if "dev" in os.environ.get(
+            "ENV") else "None",
+        domain="localhost" if "dev" in os.environ.get(
+            "ENV") else "dericfagnan.com",
+        secure=False if "dev" in os.environ.get("ENV") else True,
         httponly=True,
         max_age=1,
         expires=1
