@@ -8,17 +8,21 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 
 # Custom Modules
-from .. import schemas, crud
+from .. import schemas, crud, background_functions
+from ..dependencies import get_db, get_current_user
+
+# Core Modules
 from ..core import security
 from ..core.config import settings
-from ..dependencies import get_db, get_current_user
-from .. import background_functions
 from ..core.utilities import generate_random_uuid
+
+# Standard Library
+import os
 
 router = APIRouter(prefix="/users", tags=['users'])
 
 
-@router.get("/", response_model=List[schemas.UserResponse])
+@router.get("", response_model=List[schemas.UserResponse])
 def get_one_or_all_users(userId: Optional[int] = None, skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     """Return either all users, or a single user with id == userId. Always returns a list.
     """
@@ -39,6 +43,24 @@ def get_one_or_all_users(userId: Optional[int] = None, skip: int = 0, limit: int
         ) for user in users]
 
 
+@router.get("/search/{usernameFragment}", response_model=List[schemas.UserResponse])
+def get_one_or_all_users(usernameFragment: str = None, skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    """Search for a user based on username.
+    """
+    users = crud.search_user_by_username_fragment(db, usernameFragment, skip, limit )
+
+    # TODO perhaps there is a better way of returning this model.
+    # It seems like its trying to immidate graphql
+    return [
+        schemas.UserResponse(
+            id=user.id,
+            email=user.email,
+            username=user.username,
+            bio=user.bio,
+            birthdate=user.birthdate
+        ) for user in users]
+
+
 @router.get("/me", response_model=schemas.User)
 def get_authenticated_user(db: Session = Depends(get_db), current_user: schemas.User = Depends(get_current_user)):
     """Get the currently logged in user if there is one (testing purposes only)
@@ -46,7 +68,7 @@ def get_authenticated_user(db: Session = Depends(get_db), current_user: schemas.
     return current_user
 
 
-@router.post("/", response_model=schemas.User)
+@router.post("", response_model=schemas.User)
 async def create_user(user: schemas.UserCreate, bg_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     """Create a new user record in the database
     """
@@ -57,8 +79,9 @@ async def create_user(user: schemas.UserCreate, bg_tasks: BackgroundTasks, db: S
     confirmation_key = generate_random_uuid()
     newUser: schemas.User = crud.create_user(
         db=db, user=user, confirmation_key=confirmation_key)
-    bg_tasks.add_task(
-        background_functions.send_registration_confirmation_email, email=user.email, confirmation_key=confirmation_key)
+    if "dev" not in os.environ.get("ENV"):
+        bg_tasks.add_task(
+            background_functions.send_registration_confirmation_email, email=user.email, confirmation_key=confirmation_key)
     return newUser
 
 
