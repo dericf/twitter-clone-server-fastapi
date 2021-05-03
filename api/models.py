@@ -37,6 +37,9 @@ class User(Base):
     outbox = relationship("Messages", back_populates="user_to",
                           foreign_keys="Messages.user_to_id")
 
+    def __repr__(self):
+        return f"{self.id} | {self.username}"
+
 
 class Follows(Base):
     """<user_id> follows <follows_user_id>
@@ -117,6 +120,7 @@ class Messages(Base):
     user_from_id = Column(Integer, ForeignKey("users.id"))
     user_to_id = Column(Integer, ForeignKey("users.id"))
     content = Column(String)
+    # is_read = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     user_from = relationship(
