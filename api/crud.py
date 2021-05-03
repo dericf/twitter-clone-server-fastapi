@@ -571,7 +571,11 @@ def get_following_for_user(db: Session, user_id: int):
 #    Messages   #
 #################
 
-def get_messages_for_user(db: Session, user_id: int, skip: int = 0, limit: int = 100):
+def get_message_by_id(db: Session, message_id):
+    return db.query(models.Messages).filter_by(id=message_id).one_or_none()
+
+# !TODO: Need to actually implement the limit and skip...
+def get_messages_for_user(db: Session, user_id: int, skip: int = 0, limit: int = 10000):
     # Check the user exists first
     db_user = db.query(models.User).filter(
         models.User.id == user_id).one_or_none()
@@ -579,15 +583,15 @@ def get_messages_for_user(db: Session, user_id: int, skip: int = 0, limit: int =
     if not db_user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="User does not exist")
+    return db.query(models.Messages).filter(or_(models.Messages.user_from_id == user_id, models.Messages.user_to_id == user_id)).order_by(models.Messages.created_at.asc()).offset(skip).limit(limit).all()
 
     # User exists - proceed to return Messages
     # TODO - there might be a better way to acheive this same result -> since I have to re-shape the data on the client
     # TODO      anyway (mandatory traversal - 0(n)), I might as well just return all the messages and manually aggregate the conversations
     # TODO      on the client... Need to think about this one a bit more.
-    conversation_id = case([(models.Messages.user_from_id == user_id, models.Messages.user_to_id),
-                            (models.Messages.user_to_id == user_id, models.Messages.user_from_id)]).label("conversation_id")
-    return db.query(column("content"), column("id"), column("user_from_id"), column("user_to_id"), conversation_id).filter(or_(models.Messages.user_from_id == user_id, models.Messages.user_to_id == user_id)).all()
-    # return db.query(models.Messages).filter_by(user_from_id=user_id).order_by(models.Messages.created_at.desc()).offset(skip).limit(limit).all()
+    # conversation_id = case([(models.Messages.user_from_id == user_id, models.Messages.user_to_id),
+    #                         (models.Messages.user_to_id == user_id, models.Messages.user_from_id)]).label("conversation_id")
+    # return db.query(column("content"), column("id"), column("user_from_id"), column("user_to_id"), conversation_id).filter(or_(models.Messages.user_from_id == user_id, models.Messages.user_to_id == user_id)).all()
 
 
 def create_message(db: Session, user_id, body: schemas.MessageCreateRequestBody):
