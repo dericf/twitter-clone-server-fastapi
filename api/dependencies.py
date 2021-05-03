@@ -1,5 +1,6 @@
 # FastAPI
-from fastapi import Depends, status, HTTPException
+from fastapi import Depends, status, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi.exceptions import WebSocketRequestValidationError
 from fastapi.security import OAuth2PasswordBearer, OAuth2
 from fastapi.security.utils import get_authorization_scheme_param
 from fastapi.openapi.models import OAuthFlows as OAuthFlowsModel
@@ -35,9 +36,16 @@ class OAuth2PasswordBearerCookie(OAuth2):
         flows = OAuthFlowsModel(password={"tokenUrl": tokenUrl, "scopes": {}})
         super().__init__(flows=flows, scheme_name=scheme_name, auto_error=auto_error)
 
-    async def __call__(self, request: Request) -> Optional[str]:
-        header_authorization: str = request.headers.get("Authorization")
-        cookie_authorization: str = request.cookies.get("Authorization")
+    async def __call__(self, request: Request = None, websocket: WebSocket = None) -> Optional[str]:
+        header_authorization: str = None
+        cookie_authorization: str = None
+
+        if request and not websocket:
+            header_authorization = request.headers.get("Authorization")
+            cookie_authorization = request.cookies.get("Authorization")
+        elif websocket and not request:
+            cookie_authorization = websocket.cookies.get("Authorization")
+            header_authorization = websocket.headers.get("Authorization")
 
         header_scheme, header_param = get_authorization_scheme_param(
             header_authorization
@@ -61,12 +69,16 @@ class OAuth2PasswordBearerCookie(OAuth2):
 
         if not authorization or scheme.lower() != "bearer":
             if self.auto_error:
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated"
-                )
+                if request and not websocket:
+                    raise HTTPException(
+                        status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated"
+                    )
+                elif websocket and not request:
+                    return None
             else:
                 return None
         return param
+
 
 # oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 oauth2_scheme = OAuth2PasswordBearerCookie(tokenUrl="/token")
@@ -92,6 +104,8 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
+    if not token:
+        return None
     try:
         payload = security.decode_token(token)
         email: str = payload.get("sub")
