@@ -7,9 +7,9 @@ from pydantic import BaseModel
 class Message(BaseModel):
     id: Optional[int]
     userFromId: int
-    userFromUsername: int
+    userFromUsername: str
     userToId: int
-    userToUsername: int
+    userToUsername: str
     content: str
     createdAt: datetime
 
