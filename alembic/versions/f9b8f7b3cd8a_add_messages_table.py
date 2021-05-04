@@ -21,11 +21,11 @@ def upgrade():
         'messages',
         sa.Column('id', sa.Integer, primary_key=True, index=True),
         sa.Column('user_from_id', sa.Integer, sa.ForeignKey(
-            "users.id", index=True, ondelete="CASCADE")),
+            "users.id", ondelete="CASCADE"), index=True),
         sa.Column('user_to_id', sa.Integer, sa.ForeignKey(
-            "users.id", index=True, ondelete="CASCADE")),
+            "users.id", ondelete="CASCADE"), index=True,),
         sa.Column('content', sa.String),
-        sa.Column('is_read', sa.Boolean, index=True, default=False),
+        sa.Column('is_read', sa.Boolean, default=False),
         sa.Column('created_at', sa.DateTime(timezone=True),
                   server_default=sa.func.now())
     )
