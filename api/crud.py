@@ -74,8 +74,8 @@ def get_users(db: Session, skip: int = 0, limit: int = 100):
 def create_user(db: Session, user: schemas.UserCreate, confirmation_key: str):
     """Add a user
     """
-    account_verified = True if "dev" in os.environ.get(
-        "ENV") else False
+    account_verified = "dev" in os.environ.get(
+        "ENV")
     db_user = models.User(
         email=user.email.lower(),
         username=user.username.lower(),
@@ -242,9 +242,8 @@ def create_tweet_comment(db: Session, user_id: int, comment: schemas.CommentCrea
 
 
 def get_comment_by_id(db: Session, comment_id: int):
-    db_comment = db.query(models.Comments).filter(
+    return db.query(models.Comments).filter(
         models.Comments.id == comment_id).one_or_none()
-    return db_comment
 
 
 def get_comments_for_user(db: Session, user_id: int, skip: int = 0, limit: int = 100):
@@ -319,9 +318,8 @@ def delete_comment(db: Session, user_id: int, comment: schemas.CommentCreate):
 
 
 def get_all_users_following(db: Session, user_id: int):
-    db_followers = db.query(models.Follows).filter(
+    return db.query(models.Follows).filter(
         models.Follows.user_id == user_id).all()
-    return db_followers
 
 
 def create_follow_relationship(db: Session, user_id: int, follow_user_id: int):
@@ -415,11 +413,9 @@ def get_all_tweet_likes_for_tweet(db: Session, tweet_id: int):
         raise HTTPException(status.HTTP_400_BAD_REQUEST,
                             detail="Error. Tweet does not exist")
 
-    db_tweet_likes = db.query(models.TweetLikes).filter(
-        models.TweetLikes.tweet_id == tweet_id).all()
-
     # user exists - proceed to return tweets
-    return db_tweet_likes
+    return db.query(models.TweetLikes).filter(
+        models.TweetLikes.tweet_id == tweet_id).all()
 
 
 def create_tweet_like_for_tweet(db: Session, tweet_id: int, user_id: int):
@@ -486,11 +482,9 @@ def get_all_comment_likes_for_comment(db: Session, comment_id: int):
         raise HTTPException(status.HTTP_400_BAD_REQUEST,
                             detail="Error. Comment does not exist")
 
-    db_comment_likes = db.query(models.CommentLikes).filter(
-        models.CommentLikes.comment_id == comment_id).all()
-
     # user exists - proceed to return comments
-    return db_comment_likes
+    return db.query(models.CommentLikes).filter(
+        models.CommentLikes.comment_id == comment_id).all()
 
 
 def create_comment_like_for_comment(db: Session, comment_id: int, user_id: int):
