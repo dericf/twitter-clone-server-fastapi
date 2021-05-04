@@ -35,6 +35,12 @@ services:
       - traefik.http.routers.app-https.rule=Host(`${PRODUCTION_DOMAIN_HOST}`)
       - traefik.http.routers.app-https.tls=true
       #
+      # Websockets
+      #
+      - traefik.wss.routers.ws-service-wss.rule=Host(`${PRODUCTION_DOMAIN_HOST}`)
+      - traefik.wss.routers.ws-service-wss.entrypoints=https
+      - traefik.wss.routers.ws-service-wss.tls=true
+      #
       # Use the "le" (Let's Encrypt) resolver
       #
       - traefik.http.routers.app-https.tls.certresolver=le

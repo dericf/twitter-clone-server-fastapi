@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, Column, Integer, String, DateTime, Date,  ForeignKey
+from sqlalchemy import Boolean, Column, Integer, String, DateTime, Date, ForeignKey
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 # from sqlalchemy.dialects.postgresql import JSONB
@@ -20,6 +20,8 @@ class User(Base):
     hashed_password = Column(String, nullable=False)
     confirmation_key = Column(String, nullable=True)
     account_verified = Column(Boolean, nullable=False, default=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now())
 
     tweets = relationship("Tweet", back_populates="user")
     followers = relationship(
@@ -29,6 +31,14 @@ class User(Base):
     comments = relationship("Comments", back_populates="user")
     tweet_likes = relationship("TweetLikes", back_populates="user")
     comment_likes = relationship("CommentLikes", back_populates="user")
+
+    inbox = relationship("Messages", back_populates="user_from",
+                         foreign_keys="Messages.user_from_id")
+    outbox = relationship("Messages", back_populates="user_to",
+                          foreign_keys="Messages.user_to_id")
+
+    def __repr__(self):
+        return f"{self.id} | {self.username}"
 
 
 class Follows(Base):
@@ -101,3 +111,20 @@ class CommentLikes(Base):
         "User", back_populates="comment_likes", foreign_keys=[user_id])
     comment = relationship(
         "Comments", back_populates="likes", foreign_keys=[comment_id])
+
+
+class Messages(Base):
+    __tablename__ = "messages"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_from_id = Column(Integer, ForeignKey("users.id"))
+    user_to_id = Column(Integer, ForeignKey("users.id"))
+    content = Column(String)
+    is_read = Column(Boolean, default=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    user_from = relationship(
+        "User", back_populates="inbox", foreign_keys=[user_from_id])
+
+    user_to = relationship(
+        "User", back_populates="outbox", foreign_keys=[user_to_id])

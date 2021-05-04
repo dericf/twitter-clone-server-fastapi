@@ -3,7 +3,7 @@ from fastapi import status, HTTPException
 
 # SQLAlchemy
 from sqlalchemy.orm import Session
-from sqlalchemy import or_, func
+from sqlalchemy import or_, func, case, column
 
 # Types
 from typing import Optional
@@ -14,6 +14,9 @@ from .database import engine
 from .core import security
 import datetime
 from api.core.utilities import generate_random_uuid
+
+# Standard Library
+import os
 
 
 def get_user_by_id(db: Session, user_id: int):
@@ -45,6 +48,12 @@ def get_user_by_username(db: Session, username: str):
     return db.query(models.User).filter(func.lower(models.User.username) == func.lower(username)).first()
 
 
+def search_user_by_username_fragment(db: Session, username_fragment: str, skip: int = 0, limit: int = 100):
+    """Search for users by username
+    """
+    return db.query(models.User).filter(models.User.username.ilike(f"%{username_fragment}%")).limit(limit).offset(skip).all()
+
+
 def get_user_by_email_or_username(db: Session, email: str):
     """Get a single user by email or by uername
     """
@@ -65,13 +74,16 @@ def get_users(db: Session, skip: int = 0, limit: int = 100):
 def create_user(db: Session, user: schemas.UserCreate, confirmation_key: str):
     """Add a user
     """
+    account_verified = "dev" in os.environ.get(
+        "ENV")
     db_user = models.User(
         email=user.email.lower(),
         username=user.username.lower(),
         bio=user.bio,
         birthdate=user.birthdate,
         hashed_password=security.get_password_hash(user.password),
-        confirmation_key=confirmation_key
+        confirmation_key=confirmation_key,
+        account_verified=account_verified
     )
     db.add(db_user)
     db.commit()
@@ -206,7 +218,7 @@ def delete_tweet(db: Session, user_id: int, tweet_id: int):
 
 
 ############
-# COMMENTS #
+# Comments #
 ############
 def create_tweet_comment(db: Session, user_id: int, comment: schemas.CommentCreate):
     # First check that tweet exists
@@ -230,9 +242,8 @@ def create_tweet_comment(db: Session, user_id: int, comment: schemas.CommentCrea
 
 
 def get_comment_by_id(db: Session, comment_id: int):
-    db_comment = db.query(models.Comments).filter(
+    return db.query(models.Comments).filter(
         models.Comments.id == comment_id).one_or_none()
-    return db_comment
 
 
 def get_comments_for_user(db: Session, user_id: int, skip: int = 0, limit: int = 100):
@@ -307,9 +318,8 @@ def delete_comment(db: Session, user_id: int, comment: schemas.CommentCreate):
 
 
 def get_all_users_following(db: Session, user_id: int):
-    db_followers = db.query(models.Follows).filter(
+    return db.query(models.Follows).filter(
         models.Follows.user_id == user_id).all()
-    return db_followers
 
 
 def create_follow_relationship(db: Session, user_id: int, follow_user_id: int):
@@ -403,11 +413,9 @@ def get_all_tweet_likes_for_tweet(db: Session, tweet_id: int):
         raise HTTPException(status.HTTP_400_BAD_REQUEST,
                             detail="Error. Tweet does not exist")
 
-    db_tweet_likes = db.query(models.TweetLikes).filter(
-        models.TweetLikes.tweet_id == tweet_id).all()
-
     # user exists - proceed to return tweets
-    return db_tweet_likes
+    return db.query(models.TweetLikes).filter(
+        models.TweetLikes.tweet_id == tweet_id).all()
 
 
 def create_tweet_like_for_tweet(db: Session, tweet_id: int, user_id: int):
@@ -474,11 +482,9 @@ def get_all_comment_likes_for_comment(db: Session, comment_id: int):
         raise HTTPException(status.HTTP_400_BAD_REQUEST,
                             detail="Error. Comment does not exist")
 
-    db_comment_likes = db.query(models.CommentLikes).filter(
-        models.CommentLikes.comment_id == comment_id).all()
-
     # user exists - proceed to return comments
-    return db_comment_likes
+    return db.query(models.CommentLikes).filter(
+        models.CommentLikes.comment_id == comment_id).all()
 
 
 def create_comment_like_for_comment(db: Session, comment_id: int, user_id: int):
@@ -553,3 +559,82 @@ def get_followers_for_user(db: Session, user_id: int):
 
 def get_following_for_user(db: Session, user_id: int):
     return db.query(models.Follows).filter(models.Follows.user_id == user_id).count()
+
+
+#################
+#    Messages   #
+#################
+
+def get_message_by_id(db: Session, message_id):
+    return db.query(models.Messages).filter_by(id=message_id).one_or_none()
+
+# !TODO: Need to actually implement the limit and skip...
+def get_messages_for_user(db: Session, user_id: int, skip: int = 0, limit: int = 10000):
+    # Check the user exists first
+    db_user = db.query(models.User).filter(
+        models.User.id == user_id).one_or_none()
+
+    if not db_user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="User does not exist")
+    return db.query(models.Messages).filter(or_(models.Messages.user_from_id == user_id, models.Messages.user_to_id == user_id)).order_by(models.Messages.created_at.asc()).offset(skip).limit(limit).all()
+
+    # User exists - proceed to return Messages
+    # TODO - there might be a better way to acheive this same result -> since I have to re-shape the data on the client
+    # TODO      anyway (mandatory traversal - 0(n)), I might as well just return all the messages and manually aggregate the conversations
+    # TODO      on the client... Need to think about this one a bit more.
+    # conversation_id = case([(models.Messages.user_from_id == user_id, models.Messages.user_to_id),
+    #                         (models.Messages.user_to_id == user_id, models.Messages.user_from_id)]).label("conversation_id")
+    # return db.query(column("content"), column("id"), column("user_from_id"), column("user_to_id"), conversation_id).filter(or_(models.Messages.user_from_id == user_id, models.Messages.user_to_id == user_id)).all()
+
+
+def create_message(db: Session, user_id, body: schemas.MessageCreateRequestBody):
+    db_message = models.Messages(
+        user_from_id=user_id,
+        content=body.content,
+        user_to_id=body.userToId
+    )
+    db.add(db_message)
+    db.commit()
+    db.refresh(db_message)
+    return db_message
+
+
+def update_message(db: Session, user_id: int, message: schemas.MessageUpdateRequestBody):
+    db_message: schemas.Message = db.query(models.Messages).filter(
+        models.Messages.id == message.messageId).one_or_none()
+
+    if not db_message:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Message does not exist")
+
+    if db_message.user_id != user_id:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED,
+                            detail="You are not authorized to update that message")
+
+    db_message.content = message.newContent
+    db.commit()
+    db.refresh(db_message)
+    return db_message
+
+
+def delete_message(db: Session, user_id: int, message: schemas.MessageDeleteRequestBody):
+    message_db: schemas.Message = db.query(models.Messages).filter(
+        models.Messages.id == message.messageId).one_or_none()
+
+    if not message_db:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Message does not exist")
+
+    if message_db.user_from_id != user_id:
+        # message does not belong to the user
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED,
+                            detail="You are not authorized to delete that message")
+
+    try:
+        db.delete(message_db)
+        db.commit()
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Something went wrong")

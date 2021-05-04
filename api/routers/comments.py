@@ -68,7 +68,7 @@ def get_comment_count_for_tweet(
 def create_comment_for_tweet(
     request_body: schemas.CommentCreate,
     db: Session = Depends(get_db),
-    current_user: schemas.UserWithPassword = Depends(get_current_user)
+    current_user: schemas.User = Depends(get_current_user)
 ):
     newComment = crud.create_tweet_comment(db, current_user.id, request_body)
     return schemas.Comment(
@@ -85,7 +85,7 @@ def create_comment_for_tweet(
 def update_comment(
     request_body: schemas.CommentUpdate,
     db: Session = Depends(get_db),
-    current_user: schemas.UserWithPassword = Depends(get_current_user)
+    current_user: schemas.User = Depends(get_current_user)
 ):
     comment = crud.update_comment(db, current_user.id, request_body)
 
@@ -103,6 +103,6 @@ def update_comment(
 def delete_comment(
     request_body: schemas.CommentDelete,
     db: Session = Depends(get_db),
-    current_user: schemas.UserWithPassword = Depends(get_current_user)
+    current_user: schemas.User = Depends(get_current_user)
 ):
     return crud.delete_comment(db, current_user.id, request_body)

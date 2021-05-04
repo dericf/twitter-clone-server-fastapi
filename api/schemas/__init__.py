@@ -8,6 +8,7 @@ from .followers import *
 from .follows import *
 from .tweet_likes import *
 from .comment_likes import *
+from .messages import *
 from .auth import *
 from .token import *
 from .generic import *
