@@ -120,7 +120,7 @@ class Messages(Base):
     user_from_id = Column(Integer, ForeignKey("users.id"))
     user_to_id = Column(Integer, ForeignKey("users.id"))
     content = Column(String)
-    # is_read = Column(Boolean, default=False)
+    is_read = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     user_from = relationship(

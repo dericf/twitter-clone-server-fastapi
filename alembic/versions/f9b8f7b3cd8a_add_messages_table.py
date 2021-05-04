@@ -24,7 +24,8 @@ def upgrade():
             "users.id", index=True, ondelete="CASCADE")),
         sa.Column('user_to_id', sa.Integer, sa.ForeignKey(
             "users.id", index=True, ondelete="CASCADE")),
-        sa.Column('content', sa.String, index=True),
+        sa.Column('content', sa.String),
+        sa.Column('is_read', sa.Boolean, index=True, default=False),
         sa.Column('created_at', sa.DateTime(timezone=True),
                   server_default=sa.func.now())
     )
