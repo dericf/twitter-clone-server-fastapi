@@ -68,14 +68,11 @@ class OAuth2PasswordBearerCookie(OAuth2):
             authorization = False
 
         if not authorization or scheme.lower() != "bearer":
-            if self.auto_error:
-                if request and not websocket:
-                    raise HTTPException(
-                        status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated"
-                    )
-                elif websocket and not request:
-                    return None
-            else:
+            if self.auto_error and request and not websocket:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated"
+                )
+            elif websocket and not request or not self.auto_error:
                 return None
         return param
 
