@@ -53,8 +53,6 @@ app = FastAPI(
 # C.O.R.S.
 origins = [
     "http://localhost",
-    "ws://localhost",
-    "ws://localhost:8080",
     "http://localhost:8080",
     "http://localhost:3000",  # Frontend NextJS Client
     # Production Client on Vercel HTTP
@@ -65,6 +63,15 @@ origins = [
     # Alternate Production Client on Vercel
     "https://twitter-clone.programmertutor.com",
     "https://www.twitter-clone.programmertutor.com",
+    # Websocket Origins
+    "ws://localhost",
+    "wss://localhost",
+    "ws://localhost:8080",
+    "wss://localhost:8080",
+    "ws://twitter-clone.programmertutor.com",
+    "ws://www.twitter-clone.programmertutor.com",
+    "wss://twitter-clone.programmertutor.com",
+    "wss://www.twitter-clone.programmertutor.com",
 ]
 
 app.add_middleware(
