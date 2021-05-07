@@ -1,26 +1,8 @@
 # Standard Library
-from .routers import (
-    auth,
-    users,
-    tweets,
-    comments,
-    followers,
-    follows,
-    tweet_likes,
-    comment_likes,
-    messages,
-)
-from .core.config import settings
-from .core import security
-from .core.cors import cors_origins
-from .database import SessionLocal, engine
-from . import crud, models, schemas, dependencies
-from sqlalchemy.orm import Session
-from typing import List, Dict, Union
-from fastapi.middleware.cors import CORSMiddleware
 import os
 import time
 import json
+from typing import List, Dict, Union
 
 # FastAPI
 from fastapi import (
@@ -34,16 +16,36 @@ from fastapi import (
     Cookie,
     Query,
 )
+from fastapi.middleware.cors import CORSMiddleware
 
-# Types
+# Routers
+from .routers import (
+    auth,
+    users,
+    tweets,
+    comments,
+    followers,
+    follows,
+    tweet_likes,
+    comment_likes,
+    messages,
+)
 
 # SQLAlchemy
+from sqlalchemy.orm import Session
 
-# Custom Modules
+# Core
+from .core import security
+from .core.config import settings
+from .core.cors import cors_origins
 from .core.websocket.connection_manager import ws_manager
 
-# Import all routers defined in other modules
+# Database
+from .database import SessionLocal, engine
+from . import crud, models, schemas, dependencies
 
+
+# Instantiate Main FastAPI Instance
 app = FastAPI(
     # root_path=settings.API_V1_STR,
     title="Twitter Clone (For Educational Purposes)",
@@ -51,7 +53,7 @@ app = FastAPI(
     version="0.0.1",
 )
 
-
+# Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins,
@@ -72,6 +74,8 @@ app.include_router(tweet_likes.router)
 app.include_router(comment_likes.router)
 app.include_router(messages.router)
 
+# Needed to resolve an unknown http bug
+
 
 @app.middleware("http")
 async def modify_location_header(request: Request, call_next):
@@ -88,6 +92,8 @@ async def modify_location_header(request: Request, call_next):
         response.headers["location"] = location.replace("http:", "https:")
     return response
 
+# Dummy route at the index
+
 
 @app.get("/")
 def index(request: Request):
@@ -102,6 +108,18 @@ async def websocket_endpoint(
     db: Session = Depends(dependencies.get_db),
     current_user: schemas.User = Depends(dependencies.get_current_user)
 ):
+    """
+    Websocket endpoint for authenticated users.
+
+    Listens for incoming CONNECTIONS and uses the connection_manager class to
+    update the dictionary of active connections.
+
+    Listens for incoming MESSAGES (Note: not currently being used since client
+    relies on the http rest api)
+
+    TODO: This should be moved to its own websocket module
+    TODO: The /user_id param should not be needed anymore since it gets it from the token
+    """
     # print("\n********************\nNew Websocket Connection Incoming: ")
     # print("user_id: ", user_id)
     # print("current user", current_user)
@@ -119,10 +137,6 @@ async def websocket_endpoint(
         }
         await ws_manager.send_personal_message(auth_failed_message, user_id)
         await ws_manager.disconnect(user_id)
-    # await ws_manager.send_personal_message({
-    #     "message": "Connection OK",
-    #     "status": 200
-    # }, user_id)
     #
     # New client has connected
     #
@@ -133,16 +147,15 @@ async def websocket_endpoint(
         while True:
             #
             # Receive incoming message
-            #
+            # ! Note: so far the client does not send any WS messages - instead relies on the http rest api
             data = await websocket.receive_json()
 
             user: schemas.User = crud.get_user_by_id(db, user_id)
             # data = json.loads(data)
-            print("\n*************** New Websocket Message *************")
-            print(f"user: {user} ")
-
-            action = data.get("action")
-            print("Action: ", action)
+            # print("\n*************** New Websocket Message *************")
+            # print(f"user: {user} ")
+            # action = data.get("action")
+            # print("Action: ", action)
 
     except WebSocketDisconnect as error:
         #
