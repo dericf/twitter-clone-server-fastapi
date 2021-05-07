@@ -12,6 +12,7 @@ from .routers import (
 )
 from .core.config import settings
 from .core import security
+from .core.cors import cors_origins
 from .database import SessionLocal, engine
 from . import crud, models, schemas, dependencies
 from sqlalchemy.orm import Session
@@ -50,33 +51,10 @@ app = FastAPI(
     version="0.0.1",
 )
 
-# C.O.R.S.
-origins = [
-    "http://localhost",
-    "http://localhost:8080",
-    "http://localhost:3000",  # Frontend NextJS Client
-    # Production Client on Vercel HTTP
-    "http://twitter-clone-frontend-beryl.vercel.app",
-    "https://twitter-clone-frontend-beryl.vercel.app",  # Production Client on Vercel
-    # Alternate Production Client on Vercel HTTP
-    "http://twitter-clone.projects.programmertutor.com",
-    # Alternate Production Client on Vercel
-    "https://twitter-clone.programmertutor.com",
-    "https://www.twitter-clone.programmertutor.com",
-    # Websocket Origins
-    "ws://localhost",
-    "wss://localhost",
-    "ws://localhost:8080",
-    "wss://localhost:8080",
-    "ws://twitter-clone.programmertutor.com",
-    "ws://www.twitter-clone.programmertutor.com",
-    "wss://twitter-clone.programmertutor.com",
-    "wss://www.twitter-clone.programmertutor.com",
-]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
