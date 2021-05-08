@@ -12,6 +12,11 @@ class WSMessageAction(str, Enum):
     ChatUserOnline = "chat.user.online"
     ChatUserTyping = "chat.user.typing"
     AuthRequired = "auth.required"
+    NewFollower = "followers.followed"
+    LostFollower = "followers.unfollowed"
+    NewComment = "comments.new"
+    DeletedComment = "comments.deleted"
+    UpdatedComment = "comments.updated"
 
 
 WSMessageBody = TypeVar("WSBody")

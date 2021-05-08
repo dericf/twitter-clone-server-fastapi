@@ -13,6 +13,9 @@ from ..dependencies import get_db, get_current_user
 from ..core import security
 from ..core.config import settings
 
+from ..core.websocket.connection_manager import ws_manager
+
+
 # FastAPI router object
 router = APIRouter(prefix="/follows", tags=['follows'])
 
@@ -61,7 +64,7 @@ def get_follows_count_for_user(
 
 
 @router.post("", response_model=schemas.EmptyResponse)
-def create_follow_record_for_user(
+async def create_follow_record_for_user(
     request_body: schemas.FollowsCreateRequestBody,
     db: Session = Depends(get_db),
     current_user: schemas.User = Depends(get_current_user)
@@ -76,15 +79,41 @@ def create_follow_record_for_user(
     """
     tweet = crud.create_follow_relationship(
         db, current_user.id, request_body.followUserId)
+
+    #
+    # Broadcast WS message so user components can update
+    #
+    message = schemas.WSMessage[schemas.WSFollowsUpdateBody](
+        action=schemas.WSMessageAction.NewFollower,
+        body=schemas.WSFollowsUpdateBody(
+            userId=current_user.id,
+            followUserId=request_body.followUserId
+        )
+    )
+    await ws_manager.broadcast(message, current_user.id)
+
     return schemas.EmptyResponse()
 
 
 @router.delete('', response_model=schemas.EmptyResponse)
-def delete_follow_relationship(
+async def delete_follow_relationship(
     request_body: schemas.FollowsDeleteRequestBody,
     db: Session = Depends(get_db),
     current_user: schemas.User = Depends(get_current_user)
 ):
     delete_successful = crud.delete_follow_relationship(
         db, current_user.id, request_body.followUserId)
+
+    #
+    # Broadcast WS message so user components can update
+    #
+    message = schemas.WSMessage[schemas.WSFollowsUpdateBody](
+        action=schemas.WSMessageAction.LostFollower,
+        body=schemas.WSFollowsUpdateBody(
+            userId=current_user.id,
+            followUserId=request_body.followUserId
+        )
+    )
+    await ws_manager.broadcast(message, current_user.id)
+
     return schemas.EmptyResponse()

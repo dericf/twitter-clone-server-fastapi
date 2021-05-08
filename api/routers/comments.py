@@ -5,7 +5,9 @@ from typing import List
 from .. import schemas, crud
 from ..core import security
 from ..core.config import settings
+from ..core.websocket.connection_manager import ws_manager
 from ..dependencies import get_db, get_current_user
+from ..schemas.websockets import WSMessage, WSMessageAction
 
 router = APIRouter(prefix="/comments", tags=['comments'])
 
@@ -65,13 +67,15 @@ def get_comment_count_for_tweet(
 
 
 @router.post("", response_model=schemas.Comment)
-def create_comment_for_tweet(
+async def create_comment_for_tweet(
     request_body: schemas.CommentCreate,
     db: Session = Depends(get_db),
     current_user: schemas.User = Depends(get_current_user)
 ):
     newComment = crud.create_tweet_comment(db, current_user.id, request_body)
-    return schemas.Comment(
+
+    # Broadcast a WS message so users can see the new comment get updated in real-time
+    return_comment = schemas.Comment(
         id=newComment.id,
         userId=newComment.user_id,
         tweetId=newComment.tweet_id,
@@ -79,17 +83,24 @@ def create_comment_for_tweet(
         username=newComment.user.username,
         createdAt=newComment.created_at
     )
+    message = WSMessage[schemas.WSCommentCreated](
+        action=WSMessageAction.NewComment,
+        body=schemas.WSCommentCreated(
+            comment=return_comment
+        )
+    )
+    await ws_manager.broadcast(message, current_user.id)
+    return return_comment
 
 
 @router.put("", response_model=schemas.Comment)
-def update_comment(
+async def update_comment(
     request_body: schemas.CommentUpdate,
     db: Session = Depends(get_db),
     current_user: schemas.User = Depends(get_current_user)
 ):
     comment = crud.update_comment(db, current_user.id, request_body)
-
-    return schemas.Comment(
+    return_comment = schemas.Comment(
         id=comment.id,
         userId=comment.user_id,
         tweetId=comment.tweet_id,
@@ -97,12 +108,36 @@ def update_comment(
         username=comment.user.username,
         createdAt=comment.created_at
     )
+    #
+    # Broadcast a WS message so users can see the new comment get updated in real-time
+    #
+    message = WSMessage[schemas.WSCommentUpdated](
+        action=WSMessageAction.UpdatedComment,
+        body=schemas.WSCommentUpdated(
+            tweetId=comment.tweet_id,
+            comment=return_comment
+        )
+    )
+    await ws_manager.broadcast(message, current_user.id)
+
+    return return_comment
 
 
 @router.delete("", response_model=schemas.EmptyResponse)
-def delete_comment(
+async def delete_comment(
     request_body: schemas.CommentDelete,
     db: Session = Depends(get_db),
     current_user: schemas.User = Depends(get_current_user)
 ):
+
+    comment = crud.get_comment_by_id(db, request_body.commentId)
+    # Broadcast a WS message so users can see the new comment get updated in real-time
+    message = WSMessage[schemas.WSCommentDeleted](
+        action=WSMessageAction.DeletedComment,
+        body=schemas.WSCommentDeleted(
+            tweetId=comment.tweet_id,
+            commentId=request_body.commentId
+        )
+    )
+    await ws_manager.broadcast(message, current_user.id)
     return crud.delete_comment(db, current_user.id, request_body)
