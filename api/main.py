@@ -17,6 +17,7 @@ from fastapi import (
     Query,
 )
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.encoders import jsonable_encoder
 
 # Routers
 from .routers import (
@@ -44,6 +45,8 @@ from .core.websocket.connection_manager import ws_manager
 from .database import SessionLocal, engine
 from . import crud, models, schemas, dependencies
 
+# Schema
+from .schemas.websockets import WSMessage, WSMessageAction, WSMessageError
 
 # Instantiate Main FastAPI Instance
 app = FastAPI(
@@ -114,8 +117,7 @@ async def websocket_endpoint(
     Listens for incoming CONNECTIONS and uses the connection_manager class to
     update the dictionary of active connections.
 
-    Listens for incoming MESSAGES (Note: not currently being used since client
-    relies on the http rest api)
+    Listens for incoming MESSAGES and handles them accordingly
 
     TODO: This should be moved to its own websocket module
     TODO: The /user_id param should not be needed anymore since it gets it from the token
@@ -123,25 +125,35 @@ async def websocket_endpoint(
     # print("\n********************\nNew Websocket Connection Incoming: ")
     # print("user_id: ", user_id)
     # print("current user", current_user)
-    await ws_manager.show_all_connections()
+    # await ws_manager.show_all_connections()
     #
     # Attempt to connect new client
     #
     await ws_manager.connect(websocket, user_id)
     if not current_user:
         # print("No authenticated user - Alert client and close connection...")
-        auth_failed_message = {
-            "action": "auth.required",
-            "message": "Authentication failed",
-            "status": 401
-        }
+        auth_failed_message = WSMessage[None](
+            action=WSMessageAction.AuthRequired,
+            message="error",
+            error=WSMessageError(
+                message="Authentication failed",
+                code=401
+            )
+        )
         await ws_manager.send_personal_message(auth_failed_message, user_id)
         await ws_manager.disconnect(user_id)
+        return
     #
     # New client has connected
     #
-    user: schemas.User = crud.get_user_by_id(db, user_id)
-    # await ws_manager.broadcast({"action": "notification", "message": f"{user.username} joined the chat"})
+    # user: schemas.User = crud.get_user_by_id(db, user_id)
+    await ws_manager.broadcast({"action": "chat.user.online", "body": jsonable_encoder(
+        schemas.ChatUserOnlineResponseBody(
+            isOnline=True,
+            userId=user_id,
+            username=current_user.username
+        )
+    )}, user_id)
 
     try:
         while True:
@@ -151,16 +163,44 @@ async def websocket_endpoint(
             data = await websocket.receive_json()
 
             user: schemas.User = crud.get_user_by_id(db, user_id)
+
             # data = json.loads(data)
             # print("\n*************** New Websocket Message *************")
+            # print(data)
             # print(f"user: {user} ")
-            # action = data.get("action")
-            # print("Action: ", action)
+            action = data.get("action")
+
+            if (action == "chat.user.online"):
+                body = schemas.ChatUserOnlineRequestBody(**data.get("body"))
+                # print("Action: ", action)
+                response_body = schemas.ChatUserOnlineResponseBody(
+                    isOnline=ws_manager.user_is_online(body.userId),
+                    userId=body.userId
+                )
+                # Send a message back to notify if the other user is online or not
+                await websocket.send_json(
+                    {"action": action, "body": jsonable_encoder(response_body)})
+
+            elif (action == "chat.user.typing"):
+                body = schemas.ChatUserTypingRequestBody(**data.get("body"))
+                response_body = schemas.ChatUserTypingResponseBody(
+                    isTyping=True
+                )
+
+                await ws_manager.send_personal_message(
+                    {"action": action, "body": jsonable_encoder(response_body)}, body.userId)
 
     except WebSocketDisconnect as error:
         #
         # Client has disconnected
         #
         # print("Client Disconnected !: ", error)
+        await ws_manager.broadcast({"action": "chat.user.online", "body": jsonable_encoder(
+            schemas.ChatUserOnlineResponseBody(
+                isOnline=False,
+                userId=user_id,
+                username=current_user.username
+            )
+        )}, user_id)
         await ws_manager.disconnect(user_id)
-        await ws_manager.broadcast({"action": "notification", "message": f"{user.username} disconnected"})
+        # await ws_manager.broadcast({"action": "notification", "message": f"{user.username} disconnected"})
