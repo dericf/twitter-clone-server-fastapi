@@ -1,4 +1,4 @@
-    # FastAPI
+# FastAPI
 from fastapi import APIRouter, HTTPException, Request, Depends, status
 
 # SQLAlchemy
@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 
 # Custom Modules
-from .. import schemas, crud
+from .. import schemas, crud, models
 from ..dependencies import get_db, get_current_user
 from ..core import security
 from ..core.config import settings
@@ -28,15 +28,16 @@ def get_all_comment_likes(commentId: Optional[int] = None, db: Session = Depends
 
     An error will be returned if any commentId does not exist.
     """
-    comment_likes = []
+    comment_likes: List[models.CommentLikes] = []
     if commentId:
         comment_likes = crud.get_all_comment_likes_for_comment(db, commentId)
-        
+
     else:
         comment_likes = crud.get_all_comment_likes(db)
 
     return [
         schemas.CommentLikeResponseBody(
+            commentLikeId=like.id,
             commentId=like.comment_id,
             userId=like.user.id,
             username=like.user.username
@@ -54,16 +55,22 @@ def like_a_comment(
     comment_like = crud.create_comment_like_for_comment(
         db=db, comment_id=comment_body.commentId, user_id=current_user.id)
 
-    # TODO return 201 created
-    return schemas.EmptyResponse()
+    return schemas.CommentLikeResponseBody(
+        commentLikeId=comment_like.id,
+        commentId=comment_like.comment_id,
+        userId=comment_like.user.id,
+        username=comment_like.user.username
+    )
+
 
 @router.delete("", response_model=schemas.EmptyResponse)
 def delete_comment_like(
-    request_body: schemas.CommentLikeDeleteRequestBody,
-    db: Session = Depends(get_db),
-    current_user: schemas.User = Depends(get_current_user)):
+        request_body: schemas.CommentLikeDeleteRequestBody,
+        db: Session = Depends(get_db),
+        current_user: schemas.User = Depends(get_current_user)):
 
-    delete_successful = crud.delete_comment_like(db, current_user.id, request_body.commentId)
-    
+    delete_successful = crud.delete_comment_like_by_user_and_comment_id(
+        db, current_user.id, request_body.commentId)
+
     # TODO return status for delete?
     return schemas.EmptyResponse()

@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import or_, func, case, column
 
 # Types
-from typing import Optional
+from typing import Optional, List, Union
 
 # Custom Modules
 from . import models, schemas
@@ -17,15 +17,19 @@ from api.core.utilities import generate_random_uuid
 
 # Standard Library
 import os
+#
+# TODO : split into multiple files.
+# TODO : add return types to all functions.
+#
 
 
-def get_user_by_id(db: Session, user_id: int):
+def get_user_by_id(db: Session, user_id: int) -> Union[models.User, None]:
     """Get a single user by id
     """
     return db.query(models.User).filter(models.User.id == user_id).one_or_none()
 
 
-def get_user_by_email(db: Session, email: str):
+def get_user_by_email(db: Session, email: str) -> Union[models.User, None]:
     """Get a single user by email
     """
     query = db.query(models.User).filter(
@@ -34,7 +38,7 @@ def get_user_by_email(db: Session, email: str):
     return query.one_or_none()
 
 
-def get_user_by_confirmation_key(db: Session, confirmation_key: str):
+def get_user_by_confirmation_key(db: Session, confirmation_key: str) -> Union[models.User, None]:
     """Get a single user by confirmation key sent by email
     """
     query = db.query(models.User).filter(
@@ -42,13 +46,13 @@ def get_user_by_confirmation_key(db: Session, confirmation_key: str):
     return query.one_or_none()
 
 
-def get_user_by_username(db: Session, username: str):
+def get_user_by_username(db: Session, username: str) -> Union[models.User, None]:
     """Get a single user by username
     """
     return db.query(models.User).filter(func.lower(models.User.username) == func.lower(username)).first()
 
 
-def search_user_by_username_fragment(db: Session, username_fragment: str, skip: int = 0, limit: int = 100):
+def search_user_by_username_fragment(db: Session, username_fragment: str, skip: int = 0, limit: int = 100) -> List[models.User]:
     """Search for users by username
     """
     return db.query(models.User).filter(models.User.username.ilike(f"%{username_fragment}%")).limit(limit).offset(skip).all()
@@ -241,7 +245,7 @@ def create_tweet_comment(db: Session, user_id: int, comment: schemas.CommentCrea
             status_code=status.HTTP_400_BAD_REQUEST, detail="Tweet does not exist")
 
 
-def get_comment_by_id(db: Session, comment_id: int):
+def get_comment_by_id(db: Session, comment_id: int) -> models.Comments:
     return db.query(models.Comments).filter(
         models.Comments.id == comment_id).one_or_none()
 
@@ -273,7 +277,7 @@ def get_comments_for_tweet(db: Session, tweet_id: int, skip: int = 0, limit: int
     return db.query(models.Comments).filter(models.Comments.tweet_id == tweet_id).order_by(models.Comments.created_at.desc()).offset(skip).all()
 
 
-def update_comment(db: Session, user_id: int, comment: schemas.CommentUpdate):
+def update_comment(db: Session, user_id: int, comment: schemas.CommentUpdate) -> models.Comments:
     db_comment: schemas.Comment = db.query(models.Comments).filter(
         models.Comments.id == comment.commentId).one_or_none()
 
@@ -464,17 +468,17 @@ def delete_tweet_like(db: Session, user_id: int, tweet_id: int,):
 # Comment Likes #
 ###############
 
-def get_comment_like_by_id(db: Session, comment_like_id: int):
+def get_comment_like_by_id(db: Session, comment_like_id: int) -> models.CommentLikes:
     """Get a single comment_like object/row
     """
     return db.query(models.CommentLikes).filter(models.CommentLikes.id == comment_like_id).one_or_none()
 
 
-def get_all_comment_likes(db: Session):
+def get_all_comment_likes(db: Session) -> List[models.CommentLikes]:
     return db.query(models.CommentLikes).all()
 
 
-def get_all_comment_likes_for_comment(db: Session, comment_id: int):
+def get_all_comment_likes_for_comment(db: Session, comment_id: int) -> List[models.CommentLikes]:
     # First check if comment exists
 
     existing_comment = get_comment_by_id(db, comment_id)
@@ -515,25 +519,15 @@ def create_comment_like_for_comment(db: Session, comment_id: int, user_id: int):
     return db_comment_like
 
 
-def delete_comment_like(db: Session, user_id: int, comment_like_id: int,):
+def delete_comment_like_by_user_and_comment_id(db: Session, user_id: int, comment_id: int,):
     """Delete (Unlike) a comment
     """
     db_comment_like = db.query(models.CommentLikes).filter(
-        models.CommentLikes.id == comment_like_id).one_or_none()
+        models.CommentLikes.comment_id == comment_id, models.CommentLikes.user_id == user_id).one_or_none()
 
     if not db_comment_like:
         raise HTTPException(status.HTTP_400_BAD_REQUEST,
                             detail="Error. Cannot Delete. Bad ID for Like")
-
-    # First check if comment like and user match
-    db_user = get_user_by_id(db, user_id)
-    if not db_user:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST,
-                            detail="Error. User does not exist.")
-
-    if db_user.id != db_comment_like.user_id:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED,
-                            detail="Unauthorized.")
 
     # Data is valid - proceed to delete comment like (un-like)
     db.delete(db_comment_like)
@@ -569,6 +563,8 @@ def get_message_by_id(db: Session, message_id):
     return db.query(models.Messages).filter_by(id=message_id).one_or_none()
 
 # !TODO: Need to actually implement the limit and skip...
+
+
 def get_messages_for_user(db: Session, user_id: int, skip: int = 0, limit: int = 10000):
     # Check the user exists first
     db_user = db.query(models.User).filter(
