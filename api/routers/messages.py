@@ -5,7 +5,7 @@ from fastapi import (
     WebSocket, WebSocketDisconnect, Cookie, Query
 )
 from fastapi.responses import HTMLResponse
-
+from fastapi.encoders import jsonable_encoder
 
 # SQLAlchemy
 from sqlalchemy.orm import Session
@@ -21,6 +21,9 @@ from ..core import security
 from ..core.config import settings
 from ..core.utilities import generate_random_uuid
 from ..core.websocket.connection_manager import ws_manager
+
+# Schema
+from ..schemas.websockets import WSMessage, WSMessageAction
 
 router = APIRouter(prefix="/messages", tags=['messages'])
 
@@ -61,7 +64,7 @@ async def create_message(
     current_user: schemas.User = Depends(get_current_user)
 ):
     newMessage = crud.create_message(db, current_user.id, request_body)
-    rv = schemas.Message(
+    return_value = schemas.Message(
         id=newMessage.id,
         userFromId=newMessage.user_from_id,
         userFromUsername=current_user.username,
@@ -73,14 +76,15 @@ async def create_message(
 
     # Send a websocket message to the user who this message is sent to
     # If that user is not online, they will not receive the websocket message.
-    wsMessage = {
-        "action": "messages.new",
-        "body": rv.json()
-    }
-    # print("sending a websocket message")
-    # await ws_manager.show_all_connections()
-    await ws_manager.send_personal_message(wsMessage, request_body.userToId)
-    return rv
+    wsMessage = WSMessage[schemas.Message](
+        action=WSMessageAction.ChatMessageNew,
+        body=return_value
+    )
+    if ws_manager.user_is_online(request_body.userToId):
+        await ws_manager.send_personal_message(wsMessage, request_body.userToId)
+    else:
+        pass  # TODO: Send an email notification if the user has enabled them
+    return return_value
 
 
 @router.delete("/", response_model=schemas.EmptyResponse)
@@ -95,15 +99,15 @@ async def delete_message(
 
     # Send a websocket message to the user who this message is sent to
     # If that user is not online, they will not receive the websocket message.
-    wsMessage = {
-        "action": "messages.deleted",
-        "body": {
-            "messageId": request_body.messageId,
-            "userId": message.user_from_id
-        }
-    }
-    # print("sending a websocket message")
-    # await ws_manager.show_all_connections()
-    await ws_manager.send_personal_message(wsMessage, message.user_to_id)
+    wsMessage = WSMessage[schemas.DeletedChatMessageResponseBody](
+        action=WSMessageAction.ChatMessageDeleted,
+        body=schemas.DeletedChatMessageResponseBody(
+            messageId=request_body.messageId,
+            userId=message.user_from_id
+        )
+    )
+
+    if ws_manager.user_is_online(message.user_from_id):
+        await ws_manager.send_personal_message(wsMessage, message.user_to_id)
 
     return result
