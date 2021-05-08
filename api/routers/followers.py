@@ -37,7 +37,7 @@ def get_all_tweets(userId: int, db: Session = Depends(get_db)):
     ]
 
 
-@router.get("/count/{userId}/", response_model=schemas.CountBase)
+@router.get("/count/{userId}", response_model=schemas.CountBase)
 def get_followers_count_for_user(
     userId: int,
     db: Session = Depends(get_db)

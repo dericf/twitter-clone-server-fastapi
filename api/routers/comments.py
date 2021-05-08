@@ -10,7 +10,7 @@ from ..dependencies import get_db, get_current_user
 router = APIRouter(prefix="/comments", tags=['comments'])
 
 
-@router.get("/user/{userId}/", response_model=List[schemas.Comment])
+@router.get("/user/{userId}", response_model=List[schemas.Comment])
 def get_comments_for_user(
     userId: int,
     skip: int = 0,
@@ -31,7 +31,7 @@ def get_comments_for_user(
     ]
 
 
-@router.get("/tweet/{tweetId}/", response_model=List[schemas.Comment])
+@router.get("/tweet/{tweetId}", response_model=List[schemas.Comment])
 def get_comments_for_tweet(
     tweetId: int,
     skip: int = 0,
@@ -52,7 +52,7 @@ def get_comments_for_tweet(
     ]
 
 
-@router.get("/count/tweet/{tweetId}/", response_model=schemas.TweetCommentCount)
+@router.get("/count/tweet/{tweetId}", response_model=schemas.TweetCommentCount)
 def get_comment_count_for_tweet(
     tweetId: int,
     db: Session = Depends(get_db)
@@ -64,7 +64,7 @@ def get_comment_count_for_tweet(
     )
 
 
-@router.post("/", response_model=schemas.Comment)
+@router.post("", response_model=schemas.Comment)
 def create_comment_for_tweet(
     request_body: schemas.CommentCreate,
     db: Session = Depends(get_db),
@@ -81,7 +81,7 @@ def create_comment_for_tweet(
     )
 
 
-@router.put("/", response_model=schemas.Comment)
+@router.put("", response_model=schemas.Comment)
 def update_comment(
     request_body: schemas.CommentUpdate,
     db: Session = Depends(get_db),
@@ -99,7 +99,7 @@ def update_comment(
     )
 
 
-@router.delete("/", response_model=schemas.EmptyResponse)
+@router.delete("", response_model=schemas.EmptyResponse)
 def delete_comment(
     request_body: schemas.CommentDelete,
     db: Session = Depends(get_db),

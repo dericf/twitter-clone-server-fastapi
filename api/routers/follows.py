@@ -48,7 +48,7 @@ def get_follows(userId: int, db: Session = Depends(get_db)):
     ]
 
 
-@router.get("/count/{userId}/", response_model=schemas.CountBase)
+@router.get("/count/{userId}", response_model=schemas.CountBase)
 def get_follows_count_for_user(
     userId: int,
     db: Session = Depends(get_db)
@@ -60,7 +60,7 @@ def get_follows_count_for_user(
     )
 
 
-@router.post("/", response_model=schemas.EmptyResponse)
+@router.post("", response_model=schemas.EmptyResponse)
 def create_follow_record_for_user(
     request_body: schemas.FollowsCreateRequestBody,
     db: Session = Depends(get_db),
@@ -79,7 +79,7 @@ def create_follow_record_for_user(
     return schemas.EmptyResponse()
 
 
-@router.delete('/', response_model=schemas.EmptyResponse)
+@router.delete('', response_model=schemas.EmptyResponse)
 def delete_follow_relationship(
     request_body: schemas.FollowsDeleteRequestBody,
     db: Session = Depends(get_db),

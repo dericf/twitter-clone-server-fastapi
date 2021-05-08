@@ -47,7 +47,8 @@ def get_one_or_all_users(userId: Optional[int] = None, skip: int = 0, limit: int
 def get_one_or_all_users(usernameFragment: str = None, skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     """Search for a user based on username.
     """
-    users = crud.search_user_by_username_fragment(db, usernameFragment, skip, limit )
+    users = crud.search_user_by_username_fragment(
+        db, usernameFragment, skip, limit)
 
     # TODO perhaps there is a better way of returning this model.
     # It seems like its trying to immidate graphql
@@ -85,7 +86,7 @@ async def create_user(user: schemas.UserCreate, bg_tasks: BackgroundTasks, db: S
     return newUser
 
 
-@router.put('/', response_model=schemas.UserUpdateResponseBody)
+@router.put('', response_model=schemas.UserUpdateResponseBody)
 def update_user(request_body: schemas.UserUpdateRequestBody,
                 db: Session = Depends(get_db),
                 current_user: schemas.UserWithPassword = Depends(get_current_user)):
