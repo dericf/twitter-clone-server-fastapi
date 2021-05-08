@@ -1,4 +1,4 @@
-    # FastAPI
+# FastAPI
 from fastapi import APIRouter, HTTPException, Request, Depends, status
 
 # SQLAlchemy
@@ -17,7 +17,7 @@ from ..core.config import settings
 router = APIRouter(prefix="/tweet-likes", tags=['tweet-likes'])
 
 
-@router.get("/", response_model=List[schemas.TweetLikeResponseBody])
+@router.get("", response_model=List[schemas.TweetLikeResponseBody])
 def get_all_tweet_likes(tweetId: Optional[int] = None, db: Session = Depends(get_db)):
     """
     The GET method for this endpoint will send back either all, or specific likes based on tweet. This endpoint will always return an array of objects.
@@ -31,7 +31,7 @@ def get_all_tweet_likes(tweetId: Optional[int] = None, db: Session = Depends(get
     tweet_likes = []
     if tweetId:
         tweet_likes = crud.get_all_tweet_likes_for_tweet(db, tweetId)
-        
+
     else:
         tweet_likes = crud.get_all_tweet_likes(db)
 
@@ -44,7 +44,7 @@ def get_all_tweet_likes(tweetId: Optional[int] = None, db: Session = Depends(get
     ]
 
 
-@router.post("/", response_model=schemas.EmptyResponse)
+@router.post("", response_model=schemas.EmptyResponse)
 def like_a_tweet(
     tweet_body: schemas.TweetLikeCreateRequestBody,
     db: Session = Depends(get_db),
@@ -57,13 +57,15 @@ def like_a_tweet(
     # TODO return 201 created
     return schemas.EmptyResponse()
 
-@router.delete('/', response_model=schemas.EmptyResponse)
-def delete_tweet_like(
-    request_body: schemas.TweetLikeDeleteRequestBody,
-    db: Session = Depends(get_db),
-    current_user: schemas.User = Depends(get_current_user)):
 
-    delete_successful = crud.delete_tweet_like(db, current_user.id, request_body.tweetId)
-    
+@router.delete("", response_model=schemas.EmptyResponse)
+def delete_tweet_like(
+        request_body: schemas.TweetLikeDeleteRequestBody,
+        db: Session = Depends(get_db),
+        current_user: schemas.User = Depends(get_current_user)):
+
+    delete_successful = crud.delete_tweet_like(
+        db, current_user.id, request_body.tweetId)
+
     # TODO return status for delete?
     return schemas.EmptyResponse()

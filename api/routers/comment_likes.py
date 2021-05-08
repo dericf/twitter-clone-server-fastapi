@@ -17,7 +17,7 @@ from ..core.config import settings
 router = APIRouter(prefix="/comment-likes", tags=['comment-likes'])
 
 
-@router.get("/", response_model=List[schemas.CommentLikeResponseBody])
+@router.get("", response_model=List[schemas.CommentLikeResponseBody])
 def get_all_comment_likes(commentId: Optional[int] = None, db: Session = Depends(get_db)):
     """
     The GET method for this endpoint will send back either all, or specific likes based on comment. This endpoint will always return an array of objects.
@@ -44,7 +44,7 @@ def get_all_comment_likes(commentId: Optional[int] = None, db: Session = Depends
     ]
 
 
-@router.post("/", response_model=schemas.EmptyResponse)
+@router.post("", response_model=schemas.EmptyResponse)
 def like_a_comment(
     comment_body: schemas.CommentLikeCreateRequestBody,
     db: Session = Depends(get_db),
@@ -57,7 +57,7 @@ def like_a_comment(
     # TODO return 201 created
     return schemas.EmptyResponse()
 
-@router.delete('/', response_model=schemas.EmptyResponse)
+@router.delete("", response_model=schemas.EmptyResponse)
 def delete_comment_like(
     request_body: schemas.CommentLikeDeleteRequestBody,
     db: Session = Depends(get_db),
