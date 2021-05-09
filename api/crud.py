@@ -406,6 +406,13 @@ def get_tweet_like_by_id(db: Session, tweet_like_id: int):
     return db.query(models.TweetLikes).filter(models.TweetLikes.id == tweet_like_id).one_or_none()
 
 
+def get_tweet_like_by_tweet_id_and_user_id(db: Session, user_id, tweet_id: int) -> models.TweetLikes:
+    """Get a single tweet_like object/row
+    """
+    return db.query(models.TweetLikes).filter(
+        models.TweetLikes.tweet_id == tweet_id, models.TweetLikes.user_id == user_id).one_or_none()
+
+
 def get_all_tweet_likes(db: Session):
     return db.query(models.TweetLikes).limit(2).all()
 
@@ -440,26 +447,25 @@ def delete_tweet_like(db: Session, user_id: int, tweet_id: int,):
     """Delete (Unlike) a tweet
     """
     db_tweet_like = db.query(models.TweetLikes).filter(
-        models.TweetLikes.tweet_id == tweet_id).first()
+        models.TweetLikes.tweet_id == tweet_id, models.TweetLikes.user_id == user_id).one_or_none()
 
-    if not db_tweet_like:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST,
-                            detail="Error. Cannot Delete. Bad ID for Like")
+    # if not db_tweet_like:
+    #     raise HTTPException(status.HTTP_400_BAD_REQUEST,
+    #                         detail="Error. Cannot Delete. Bad ID for Like")
 
-    # First check if tweet like and user match
-    db_user = get_user_by_id(db, user_id)
-    if not db_user:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST,
-                            detail="Error. User does not exist.")
+    # # First check if tweet like and user match
+    # db_user = get_user_by_id(db, user_id)
+    # if not db_user:
+    #     raise HTTPException(status.HTTP_400_BAD_REQUEST,
+    #                         detail="Error. User does not exist.")
 
-    if db_user.id != db_tweet_like.user_id:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED,
-                            detail="Unauthorized to unike this tweet.")
+    # if db_user.id != db_tweet_like.user_id:
+    #     raise HTTPException(status.HTTP_401_UNAUTHORIZED,
+    #                         detail="Unauthorized to unike this tweet.")
 
     # Data is valid - proceed to delete tweet like (un-like)
     db.delete(db_tweet_like)
     db.commit()
-    return
 
 
 # --------------------
@@ -472,6 +478,13 @@ def get_comment_like_by_id(db: Session, comment_like_id: int) -> models.CommentL
     """Get a single comment_like object/row
     """
     return db.query(models.CommentLikes).filter(models.CommentLikes.id == comment_like_id).one_or_none()
+
+
+def get_comment_like_by_comment_id_and_user_id(db: Session, user_id, comment_id: int) -> models.CommentLikes:
+    """Get a single comment_like object/row
+    """
+    return db.query(models.CommentLikes).filter(
+        models.CommentLikes.comment_id == comment_id, models.CommentLikes.user_id == user_id).one_or_none()
 
 
 def get_all_comment_likes(db: Session) -> List[models.CommentLikes]:
@@ -522,8 +535,8 @@ def create_comment_like_for_comment(db: Session, comment_id: int, user_id: int):
 def delete_comment_like_by_user_and_comment_id(db: Session, user_id: int, comment_id: int,):
     """Delete (Unlike) a comment
     """
-    db_comment_like = db.query(models.CommentLikes).filter(
-        models.CommentLikes.comment_id == comment_id, models.CommentLikes.user_id == user_id).one_or_none()
+    db_comment_like = get_comment_like_by_comment_id_and_user_id(
+        db, user_id, comment_id)
 
     if not db_comment_like:
         raise HTTPException(status.HTTP_400_BAD_REQUEST,
