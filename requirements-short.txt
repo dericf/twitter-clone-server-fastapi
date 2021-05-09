@@ -7,3 +7,4 @@ bcrypt
 passlib[bcrypt]
 alembic
 sendgrid
+beautifulsoup4

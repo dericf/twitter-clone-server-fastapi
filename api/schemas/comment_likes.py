@@ -11,6 +11,7 @@ class BasicComment(BaseModel):
     class Config:
         orm_mode = True
 
+
 class BasicUser(BaseModel):
     id: int
     email: str
@@ -20,12 +21,15 @@ class BasicUser(BaseModel):
     class Config:
         orm_mode = True
 
+
 class CommentLikeCreateResponseBody(BaseModel):
     commentId: int
     userId: int
     username: str
 
+
 class CommentLikeResponseBody(BaseModel):
+    commentLikeId: int
     commentId: int
     userId: int
     username: str
@@ -39,8 +43,15 @@ class CommentLike(BaseModel):
     class Config:
         orm_mode = True
 
+
 class CommentLikeCreateRequestBody(BaseModel):
     commentId: Optional[int]
 
+
 class CommentLikeDeleteRequestBody(BaseModel):
     commentId: int
+
+
+class WSCommentLikeUpdated(BaseModel):
+    isLiked: bool
+    commentLike: CommentLikeResponseBody

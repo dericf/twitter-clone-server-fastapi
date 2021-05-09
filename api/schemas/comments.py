@@ -32,3 +32,16 @@ class CommentDelete(BaseModel):
 class CommentUpdate(BaseModel):
     commentId: int
     newContent: str
+
+
+class WSCommentCreated(BaseModel):
+    comment: Comment
+
+
+class WSCommentUpdated(WSCommentCreated):
+    pass  # same as created
+
+
+class WSCommentDeleted(BaseModel):
+    tweetId: int
+    commentId: int
