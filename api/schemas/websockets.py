@@ -17,6 +17,8 @@ class WSMessageAction(str, Enum):
     NewComment = "comments.new"
     DeletedComment = "comments.deleted"
     UpdatedComment = "comments.updated"
+    UpdatedCommentLike = "comments.likes.changed"
+    UpdatedTweetLike = "tweets.likes.changed"
 
 
 WSMessageBody = TypeVar("WSBody")
