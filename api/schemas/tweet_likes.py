@@ -11,6 +11,7 @@ class BasicTweet(BaseModel):
     class Config:
         orm_mode = True
 
+
 class BasicUser(BaseModel):
     id: int
     email: str
@@ -20,10 +21,12 @@ class BasicUser(BaseModel):
     class Config:
         orm_mode = True
 
+
 class TweetLikeCreateResponseBody(BaseModel):
     tweetId: int
     userId: int
     username: str
+
 
 class TweetLikeResponseBody(BaseModel):
     tweetId: int
@@ -39,8 +42,15 @@ class TweetLike(BaseModel):
     class Config:
         orm_mode = True
 
+
 class TweetLikeCreateRequestBody(BaseModel):
     tweetId: int
 
+
 class TweetLikeDeleteRequestBody(BaseModel):
     tweetId: int
+
+
+class WSTweetLikeUpdated(BaseModel):
+    isLiked: bool
+    tweetLike: TweetLikeResponseBody
