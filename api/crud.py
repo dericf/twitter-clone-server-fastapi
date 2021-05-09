@@ -270,7 +270,7 @@ def get_comments_for_tweet(db: Session, tweet_id: int, skip: int = 0, limit: int
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Tweet does not exist")
     # return db_tweet.comments
-    return db.query(models.Comments).filter(models.Comments.tweet_id == tweet_id).order_by(models.Comments.created_at.desc()).offset(skip).all()
+    return db.query(models.Comments).filter(models.Comments.tweet_id == tweet_id).order_by(models.Comments.created_at.asc()).offset(skip).all()
 
 
 def update_comment(db: Session, user_id: int, comment: schemas.CommentUpdate):
