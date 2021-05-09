@@ -50,3 +50,8 @@ class CommentLikeCreateRequestBody(BaseModel):
 
 class CommentLikeDeleteRequestBody(BaseModel):
     commentId: int
+
+
+class WSCommentLikeUpdated(BaseModel):
+    isLiked: bool
+    commentLike: CommentLikeResponseBody
