@@ -3,9 +3,11 @@ from fastapi import WebSocket
 from fastapi.encoders import jsonable_encoder
 
 # Standard Library
-from typing import Union, Dict
+from typing import Union, Dict, Any
 import json
 from datetime import date, datetime
+
+from ...schemas.websockets import WSMessage, WSMessageAction
 
 
 class ConnectionManager:
@@ -39,7 +41,7 @@ class ConnectionManager:
         except:
             print("Error Sending Message")
 
-    async def broadcast(self, message: Dict, current_user_id: int):
+    async def broadcast(self, message: Union[Dict, WSMessage[Any]], current_user_id: int):
         for user_id, connection in self.active_connections.items():
             if(current_user_id != user_id):
                 try:

@@ -14,6 +14,7 @@ class Follow(BaseModel):
 class FollowsCreateRequestBody(BaseModel):
     followUserId: int
 
+
 class FollowsDeleteRequestBody(BaseModel):
     followUserId: int
 
@@ -27,3 +28,8 @@ class FollowsResponse(BaseModel):
 
     class Config:
         orm_mode = True
+
+
+class WSFollowsUpdateBody(BaseModel):
+    userId: int
+    followUserId: int
