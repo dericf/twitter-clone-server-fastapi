@@ -37,7 +37,7 @@ psycopg2-binary==2.8.6
 pyasn1==0.4.8
 pycodestyle==2.7.0
 pycparser==2.20
-pydantic==1.8.1
+pydantic==1.8.2
 python-dateutil==2.8.1
 python-dotenv==0.17.0
 python-editor==1.0.4
