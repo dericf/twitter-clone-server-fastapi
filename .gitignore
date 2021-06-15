@@ -1,9 +1,7 @@
 venv
 documentation
 __pycache__
-
+**/.DS_Store
 *.db
-
 .env
-
 pgdata
