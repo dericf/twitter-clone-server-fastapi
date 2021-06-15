@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Request, Depends
+from fastapi import APIRouter, HTTPException, Request, Depends, BackgroundTasks
 from sqlalchemy.orm import Session
 from typing import List
 
@@ -7,6 +7,7 @@ from ..core import security
 from ..core.config import settings
 from ..core.websocket.connection_manager import ws_manager
 from ..dependencies import get_db, get_current_user
+from ..background_functions.email_notifications import send_new_comment_notification_email
 from ..schemas.websockets import WSMessage, WSMessageAction
 
 router = APIRouter(prefix="/comments", tags=['comments'])
@@ -69,6 +70,7 @@ def get_comment_count_for_tweet(
 @router.post("", response_model=schemas.Comment)
 async def create_comment_for_tweet(
     request_body: schemas.CommentCreate,
+    bg_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     current_user: schemas.User = Depends(get_current_user)
 ):
@@ -89,6 +91,12 @@ async def create_comment_for_tweet(
             comment=return_comment
         )
     )
+
+    if not ws_manager.user_is_online(newComment.tweet.user.id):
+        bg_tasks.add_task(send_new_comment_notification_email,
+                          tweet_owner=newComment.tweet.user, commenter=newComment.user, comment=newComment)
+
+    # Push the new comment to all online users
     await ws_manager.broadcast(message, current_user.id)
     return return_comment
 
