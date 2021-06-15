@@ -21,7 +21,6 @@ from ..core import security
 from ..core.config import settings
 from ..core.utilities import generate_random_uuid
 from ..core.websocket.connection_manager import ws_manager
-from ..core.sendgrid.utils import get_suppressions_for_email
 
 # Schema
 from ..schemas.websockets import WSMessage, WSMessageAction
