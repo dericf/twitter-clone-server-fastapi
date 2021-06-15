@@ -16,7 +16,7 @@ cryptography==3.4.7
 dnspython==2.1.0
 ecdsa==0.14.1
 email-validator==1.1.2
-fastapi==0.63.0
+fastapi==0.65.2
 graphene==2.1.8
 graphql-core==2.3.2
 graphql-relay==2.0.1
@@ -54,12 +54,12 @@ six==1.15.0
 soupsieve==2.2.1
 SQLAlchemy==1.4.5
 starkbank-ecdsa==1.1.0
-starlette==0.13.6
+starlette==0.14.2
 toml==0.10.2
 typing-extensions==3.7.4.3
 ujson==3.2.0
-urllib3==1.26.4
+urllib3==1.26.5
 uvicorn==0.13.4
 uvloop==0.15.2
 watchgod==0.7
-websockets==8.1
+websockets==9.1
