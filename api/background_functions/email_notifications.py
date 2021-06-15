@@ -32,7 +32,6 @@ async def send_registration_confirmation_email(username: str, email: str, confir
         "confirmation_url": f'{os.environ.get("PRODUCTION_CLIENT_HOST_URL")}/confirm-email?confirmationKey={confirmation_key}',
         "username": username
     }
-    # print(message)
     await send_email(message)
 
 
