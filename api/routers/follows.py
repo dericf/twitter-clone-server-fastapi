@@ -1,5 +1,5 @@
 # FastAPI
-from fastapi import APIRouter, HTTPException, Request, Depends, status
+from fastapi import APIRouter, HTTPException, Request, Depends, status, BackgroundTasks
 
 # SQLAlchemy
 from sqlalchemy.orm import Session
@@ -10,6 +10,7 @@ from typing import List, Optional
 # Custom Modules
 from .. import schemas, crud
 from ..dependencies import get_db, get_current_user
+from ..background_functions.email_notifications import send_new_follower_notification_email
 from ..core import security
 from ..core.config import settings
 
@@ -66,18 +67,17 @@ def get_follows_count_for_user(
 @router.post("", response_model=schemas.EmptyResponse)
 async def create_follow_record_for_user(
     request_body: schemas.FollowsCreateRequestBody,
+    bg_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     current_user: schemas.User = Depends(get_current_user)
 ):
     """
     The POST method for this endpoint will create a follow relationship between two users.
 
-    current_user requests to follow userId
-
-    An error will be returned if the loginToken or followId are invalid.
+    current_user requests to follow a new user
 
     """
-    tweet = crud.create_follow_relationship(
+    crud.create_follow_relationship(
         db, current_user.id, request_body.followUserId)
 
     #
@@ -90,6 +90,13 @@ async def create_follow_record_for_user(
             followUserId=request_body.followUserId
         )
     )
+
+    if not ws_manager.user_is_online(request_body.followUserId):
+        # Send a notification email
+        new_follower = crud.get_user_by_id(db, request_body.followUserId)
+        bg_tasks.add_task(send_new_follower_notification_email,
+                          current_user, new_follower)
+
     await ws_manager.broadcast(message, current_user.id)
 
     return schemas.EmptyResponse()
