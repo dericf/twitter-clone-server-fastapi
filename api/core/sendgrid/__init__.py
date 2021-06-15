@@ -11,7 +11,6 @@ from sendgrid import SendGridAPIClient, Personalization, Asm
 from sendgrid.helpers.mail import Mail
 
 # Utilities
-from .utils import get_text_from_html
 from .schema import EmailSender
 from ... import models
 
