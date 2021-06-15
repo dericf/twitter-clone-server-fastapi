@@ -15,15 +15,17 @@ from typing import List, Optional
 
 # Custom Modules
 from .. import schemas, crud, models
-from .. import background_functions
+from ..background_functions.email_notifications import send_new_message_notification_email
 from ..dependencies import get_db, get_current_user
 from ..core import security
 from ..core.config import settings
 from ..core.utilities import generate_random_uuid
 from ..core.websocket.connection_manager import ws_manager
+from ..core.sendgrid.utils import get_suppressions_for_email
 
 # Schema
 from ..schemas.websockets import WSMessage, WSMessageAction
+from ..core.sendgrid.schema import EmailSender
 
 router = APIRouter(prefix="/messages", tags=['messages'])
 
@@ -60,6 +62,7 @@ def messages(
 @router.post("", response_model=schemas.Message)
 async def create_message(
     request_body: schemas.MessageCreateRequestBody,
+    bg_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     current_user: schemas.User = Depends(get_current_user)
 ):
@@ -73,7 +76,7 @@ async def create_message(
         content=newMessage.content,
         createdAt=newMessage.created_at
     )
-
+    other_user = crud.get_user_by_id(db, newMessage.user_to_id)
     # Send a websocket message to the user who this message is sent to
     # If that user is not online, they will not receive the websocket message.
     wsMessage = WSMessage[schemas.Message](
@@ -81,9 +84,17 @@ async def create_message(
         body=return_value
     )
     if ws_manager.user_is_online(request_body.userToId):
+        print('user is online')
         await ws_manager.send_personal_message(wsMessage, request_body.userToId)
     else:
-        pass  # TODO: Send an email notification if the user has enabled them
+        print("sending a notification email")
+        # Send an email notification to the user.
+        # TODO - perhaps implement some rate limiting here so it only sends
+        #        a max amount per minute or something.
+        #        this could be another dict holding last time sent...?
+        bg_tasks.add_task(send_new_message_notification_email,
+                          current_user, other_user)
+
     return return_value
 
 
