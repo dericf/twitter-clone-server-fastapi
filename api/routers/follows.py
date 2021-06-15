@@ -95,7 +95,7 @@ async def create_follow_record_for_user(
         # Send a notification email
         new_follower = crud.get_user_by_id(db, request_body.followUserId)
         bg_tasks.add_task(send_new_follower_notification_email,
-                          current_user, new_follower)
+                          new_follower, current_user)
 
     await ws_manager.broadcast(message, current_user.id)
 
