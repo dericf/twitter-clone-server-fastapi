@@ -1,22 +1,25 @@
-from sendgrid import SendGridAPIClient
-from sendgrid.helpers.mail import Mail
+# Standard Library
 import os
-
 from typing import Union, List
+from enum import Enum
+
+from pydantic import EmailStr
 
 
-def send_email(to_emails: Union[List[str], str], subject: str, html_content: str):
-    #
-    # Build Sendgrid Mail Object
-    #
-    message = Mail(from_email=os.environ.get("SEND_GRID_FROM_EMAIL"),
-                   to_emails=to_emails,
-                   subject=subject,
-                   html_content=html_content)
+# SendGrid API
+from sendgrid import SendGridAPIClient, Personalization, Asm
+from sendgrid.helpers.mail import Mail
 
+# Utilities
+from .utils import get_text_from_html
+from .schema import EmailSender
+from ... import models
+
+
+async def send_email(message: Mail):
     try:
         sg = SendGridAPIClient(os.environ.get("SEND_GRID_API_KEY"))
         response = sg.send(message)
 
     except Exception as e:
-        print("error")
+        print("error sending email", e)
