@@ -8,7 +8,8 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 
 # Custom Modules
-from .. import schemas, crud, background_functions
+from .. import schemas, crud
+from ..background_functions.email_notifications import send_registration_confirmation_email
 from ..dependencies import get_db, get_current_user
 
 # Core Modules
@@ -71,18 +72,26 @@ def get_authenticated_user(db: Session = Depends(get_db), current_user: schemas.
 
 @router.post("", response_model=schemas.User)
 async def create_user(user: schemas.UserCreate, bg_tasks: BackgroundTasks, db: Session = Depends(get_db)):
-    """Create a new user record in the database
+    """Create a new user record in the database and send a registration confirmation email
     """
     db_user = crud.get_user_by_email(db, email=user.email)
     if db_user:
         raise HTTPException(status_code=400, detail="Email already registered")
+    #
     # Generate a random uuid to email to the user
+    #
     confirmation_key = generate_random_uuid()
+    #
+    # Create the new user
+    #
     newUser: schemas.User = crud.create_user(
         db=db, user=user, confirmation_key=confirmation_key)
-    if "dev" not in os.environ.get("ENV"):
-        bg_tasks.add_task(
-            background_functions.send_registration_confirmation_email, email=user.email, confirmation_key=confirmation_key)
+    bg_tasks.add_task(
+        send_registration_confirmation_email,
+        username=newUser.username,
+        email=user.email,
+        confirmation_key=confirmation_key
+    )
     return newUser
 
 
