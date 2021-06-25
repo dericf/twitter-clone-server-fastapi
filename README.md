@@ -2,7 +2,13 @@
 
 This is a project that is meant to explore the capabilities of FastAPI by building a real-world application - in this case a simple twitter clone.
 
-[]()
+The frontend NextJS Application code can be found here [https://github.com/dericf/twitter-clone-frontend](https://github.com/dericf/twitter-clone-frontend)
+
+You can see the live, hosted, auto-generated api documentation [here](https://twitter-clone.dericfagnan.com/docs)
+
+Example Screenshot:
+![image](https://user-images.githubusercontent.com/14207512/123458406-43921f00-d5a2-11eb-834c-71902b118c77.png)
+
 
 ## Installation/Setup
 
