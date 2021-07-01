@@ -115,9 +115,7 @@ def update_user(request_body: schemas.UserUpdateRequestBody,
             raise HTTPException(
                 status_code=status.HTTP_406_NOT_ACCEPTABLE, detail="Username already exists")
 
-    # Update user attributes
-    user = crud.update_user(db, current_user.id, request_body)
-    return user
+    return crud.update_user(db, current_user.id, request_body)
 
 
 @router.delete('/', response_model=schemas.EmptyResponse)
