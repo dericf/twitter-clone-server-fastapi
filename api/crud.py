@@ -148,10 +148,8 @@ def get_tweets_for_user(db: Session, user_id: int, skip: int = 0, limit: int = 1
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="User does not exist")
 
-    # user exists - proceed to return tweets
-    tweets = db.query(models.Tweet).filter(models.Tweet.user_id == user_id).order_by(
+    return db.query(models.Tweet).filter(models.Tweet.user_id == user_id).order_by(
         models.Tweet.created_at.desc()).limit(limit).all()
-    return tweets
 
 
 def get_tweets_liked_by_user(db: Session, user_id: int, skip: int = 0, limit: int = 100):
@@ -390,10 +388,8 @@ def get_all_followers(db: Session, user_id: int):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
                             detail="Bad userId. User does not exist.")
 
-    # User is valid - proceed to get all followers
-    db_followers = db.query(models.Follows).filter(
+    return db.query(models.Follows).filter(
         models.Follows.follows_user_id == user_id).all()
-    return db_followers
 
 ###############
 # Tweet Likes #
